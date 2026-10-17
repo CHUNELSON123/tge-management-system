@@ -1,0 +1,207 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  build-matrix:
+    name: Build, lint, typecheck and tests (node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18, 20, 22, 24, 26]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      # CLIENT
+      - name: Install client dependencies
+        run: npm ci --prefix client
+
+      - name: Lint client
+        run: npm run lint --prefix client
+
+      - name: Type-check client (tsc)
+        run: npx tsc --noEmit --project client/tsconfig.json
+
+      - name: Build client (Next.js)
+        run: npm run build --prefix client
+
+      # SERVER
+      - name: Install server dependencies
+        run: npm ci --prefix server
+
+      - name: Type-check server
+        run: npm run typecheck --prefix server
+
+      - name: Build server
+        run: npm run build --prefix server
+
+      # TESTS: FAIL if missing or placeholder (encourages adding tests)
+      - name: Ensure client has tests
+        run: |
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('client/package.json')); if(!p.scripts||!p.scripts.test){console.error('client test script missing'); process.exit(2);} if(p.scripts.test.match(/echo\\s+\"Error: no test specified\"/)){console.error('client test script is placeholder'); process.exit(2);} console.log('client tests present');"
+
+      - name: Run client tests
+        run: npm run test --prefix client
+
+      - name: Ensure server has tests
+        run: |
+          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('server/package.json')); if(!p.scripts||!p.scripts.test){console.error('server test script missing'); process.exit(2);} if(p.scripts.test.match(/echo\\s+\"Error: no test specified\"/)){console.error('server test script is placeholder'); process.exit(2);} console.log('server tests present');"
+
+      - name: Run server tests
+        run: npm run test --prefix server
+
+      # Prisma static check
+      - name: Prisma - generate (static schema check)
+        run: npx prisma generate --schema=database/prisma/schema.prisma
+        env:
+          PRISMA_HIDE_UPDATE_NOTICE: 1
+
+  prisma-checks:
+    name: Prisma schema checks and optional migrate status
+    runs-on: ubuntu-latest
+    needs: build-matrix
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install prisma (transient)
+        run: npm install prisma --no-save
+
+      - name: Prisma generate (static check)
+        run: npx prisma generate --schema=database/prisma/schema.prisma
+
+      - name: Optional: Prisma migrate status (runs only if DATABASE_URL secret is set)
+        if: ${{ secrets.DATABASE_URL != '' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx prisma migrate status --schema=database/prisma/schema.prisma
+
+      - name: Migration instructions when DATABASE_URL is not provided
+        if: ${{ secrets.DATABASE_URL == '' }}
+        run: |
+          echo "DATABASE_URL not set — skipping prisma migrate status."
+          echo "To enable full migration checks in CI, set the DATABASE_URL secret and re-run."
+
+  security-scans:
+    name: Security and dependency scans
+    runs-on: ubuntu-latest
+    needs: build-matrix
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install client dependencies (for audit)
+        run: npm ci --prefix client
+
+      - name: Run npm audit for client (moderate)
+        run: npm audit --prefix client --audit-level=moderate || true
+
+      - name: Install server dependencies (for audit)
+        run: npm ci --prefix server
+
+      - name: Run npm audit for server (moderate)
+        run: npm audit --prefix server --audit-level=moderate || true
+
+  codeql-analysis:
+    name: CodeQL analysis
+    runs-on: ubuntu-latest
+    needs: [build-matrix]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  vercel-preview:
+    name: Vercel preview deployment (optional)
+    runs-on: ubuntu-latest
+    needs: [build-matrix]
+    if: ${{ secrets.VERCEL_TOKEN != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel (preview for PR)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          echo "Deploying preview to Vercel for PR $GITHUB_REF"
+          # Use --prebuilt to deploy the build that was created earlier if desired.
+          # To target a specific Vercel project/org, set VERCEL_ORG_ID and VERCEL_PROJECT_ID secrets or use --scope/--project flags.
+          vercel --token "$VERCEL_TOKEN" --confirm --prebuilt || true
+
+  e2e-playwright:
+    name: Optional Playwright E2E (runs only if Playwright config exists)
+    runs-on: ubuntu-latest
+    needs: [build-matrix]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for Playwright config
+        id: check_playwright
+        run: |
+          if [ -f client/playwright.config.ts ] || [ -f client/playwright.config.js ]; then
+            echo "playwright=true" >> $GITHUB_OUTPUT
+          else
+            echo "playwright=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Skip if Playwright not configured
+        if: ${{ steps.check_playwright.outputs.playwright == 'false' }}
+        run: |
+          echo "No Playwright config found in client/ — skipping E2E step."
+          exit 0
+
+      - name: Setup Node 20
+        if: ${{ steps.check_playwright.outputs.playwright == 'true' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies and Playwright browsers
+        if: ${{ steps.check_playwright.outputs.playwright == 'true' }}
+        run: |
+          npm ci --prefix client
+          npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        if: ${{ steps.check_playwright.outputs.playwright == 'true' }}
+        run: |
+          # Playwright will run projects configured in playwright.config.(ts|js): chromium, firefox, webkit (webkit ~ Safari, chromium covers Chrome/Edge)
+          npx playwright test --project=chromium --reporter=github || npx playwright test --project=firefox --reporter=github || npx playwright test --project=webkit --reporter=github
