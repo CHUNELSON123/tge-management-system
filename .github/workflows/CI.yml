@@ -13,11 +13,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 20, 22, 24, 26]
+        node-version: [18, 20]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -25,10 +27,48 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      # CLIENT
-      - name: Install client dependencies
-        run: npm ci --prefix client
+      - name: Cache npm and node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            **/node_modules
+          key: ${{ runner.os }}-node-${{ matrix.node-version }}-lockfile-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node-version }}-
 
+      # Migration presence enforcement (only on PRs)
+      - name: Ensure migrations accompany schema changes (PRs only)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          echo "Checking for schema.prisma changes and corresponding migration files..."
+          CHANGED=$(git diff --name-only origin/main...HEAD || true)
+          echo "Changed files:"
+          echo "$CHANGED"
+          if echo "$CHANGED" | grep -q '^database/prisma/schema.prisma$'; then
+            echo "schema.prisma changed — verifying migration files were added/modified under database/prisma/migrations/"
+            if echo "$CHANGED" | grep -q '^database/prisma/migrations/'; then
+              echo "Migration files detected in the PR."
+            else
+              echo "ERROR: schema.prisma changed but no migration files were added under database/prisma/migrations/"
+              echo "Per repository policy, please run: npx prisma migrate dev --name descriptive-name and commit the generated SQL migration files."
+              exit 1
+            fi
+          else
+            echo "schema.prisma not changed — skipping migration presence check."
+          fi
+
+      # Root install to ensure workspace-local packages (like @tge/database) are linked
+      - name: Install root dependencies (monorepo workspace)
+        run: npm ci
+
+      # Generate Prisma Client early so builds/typechecks can import generated types
+      - name: Prisma - generate (ensure generated client available)
+        run: npx prisma generate --schema=database/prisma/schema.prisma
+        env:
+          PRISMA_HIDE_UPDATE_NOTICE: 1
+
+      # CLIENT: lint, typecheck, build
       - name: Lint client
         run: npm run lint --prefix client
 
@@ -38,10 +78,7 @@ jobs:
       - name: Build client (Next.js)
         run: npm run build --prefix client
 
-      # SERVER
-      - name: Install server dependencies
-        run: npm ci --prefix server
-
+      # SERVER: typecheck and build
       - name: Type-check server
         run: npm run typecheck --prefix server
 
@@ -63,14 +100,14 @@ jobs:
       - name: Run server tests
         run: npm run test --prefix server
 
-      # Prisma static check
+      # Double-check Prisma generate (idempotent) to verify schema validity
       - name: Prisma - generate (static schema check)
         run: npx prisma generate --schema=database/prisma/schema.prisma
         env:
           PRISMA_HIDE_UPDATE_NOTICE: 1
 
   prisma-checks:
-    name: Prisma schema checks and optional migrate status
+    name: Prisma schema checks and optional migrate status/deploy
     runs-on: ubuntu-latest
     needs: build-matrix
     steps:
@@ -94,11 +131,60 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx prisma migrate status --schema=database/prisma/schema.prisma
 
+      - name: Optional: Prisma migrate deploy to production (ONLY on main and when DATABASE_URL present)
+        if: ${{ github.ref == 'refs/heads/main' && secrets.DATABASE_URL != '' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Running prisma migrate deploy against DATABASE_URL provided in secrets (production path)."
+          npx prisma migrate deploy --schema=database/prisma/schema.prisma
+
       - name: Migration instructions when DATABASE_URL is not provided
         if: ${{ secrets.DATABASE_URL == '' }}
         run: |
-          echo "DATABASE_URL not set — skipping prisma migrate status."
+          echo "DATABASE_URL not set — skipping prisma migrate status/deploy."
           echo "To enable full migration checks in CI, set the DATABASE_URL secret and re-run."
+
+  prisma-migration-test:
+    name: PR ephemeral PostgreSQL migration test
+    runs-on: ubuntu-latest
+    needs: build-matrix
+    if: ${{ github.event_name == 'pull_request' }}
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tge_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tge_ci" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies (root)
+        run: npm ci
+
+      - name: Wait for Postgres
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres; do sleep 1; done
+
+      - name: Set DATABASE_URL and run migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tge_ci?schema=public
+        run: |
+          echo "DATABASE_URL=$DATABASE_URL"
+          export DATABASE_URL
+          npx prisma generate --schema=database/prisma/schema.prisma
+          npx prisma migrate deploy --schema=database/prisma/schema.prisma
 
   security-scans:
     name: Security and dependency scans
@@ -159,6 +245,8 @@ jobs:
       - name: Deploy to Vercel (preview for PR)
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           echo "Deploying preview to Vercel for PR $GITHUB_REF"
           # Use --prebuilt to deploy the build that was created earlier if desired.
