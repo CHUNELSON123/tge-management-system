@@ -68,7 +68,7 @@ model MentoringProgressRecord {
   progressValue    Float?   @map("progress_value")
   recordedAt       DateTime @default(now()) @map("recorded_at") @db.Timestamptz(6)
 
-  objective  MentoringObjective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  objective  MentoringObjective @relation(fields: [objectiveId], references: [id], onDelete: Restrict)
   recordedBy User               @relation(fields: [recordedByUserId], references: [id], onDelete: Restrict)
 
   @@index([objectiveId])
