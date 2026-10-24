@@ -1,0 +1,82 @@
+// Business directory, categories, reviews, and media.
+
+model Business {
+  id                String   @id @default(uuid()) @db.Uuid
+  memberId          String   @map("member_id") @db.Uuid
+  name              String   @db.VarChar(250)
+  slug              String   @unique @db.VarChar(280)
+  description       String?  @db.Text
+  logoStorageKey    String?  @map("logo_storage_key") @db.VarChar(500)
+  websiteUrl        String?  @map("website_url") @db.VarChar(1000)
+  email             String?  @db.VarChar(255)
+  phone             String?  @db.VarChar(30)
+  address           String?  @db.Text
+  status            String   @default("active") @db.VarChar(50)
+  publicationStatus String   @default("draft") @map("publication_status") @db.VarChar(50)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  member     Member                       @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  categories BusinessCategoryAssignment[]
+  reviews    BusinessReview[]
+  media      BusinessMedia[]
+
+  @@index([memberId])
+  @@index([status])
+  @@index([publicationStatus])
+  @@map("businesses")
+}
+
+model BusinessCategory {
+  id          String  @id @default(uuid()) @db.Uuid
+  name        String  @unique @db.VarChar(150)
+  description String? @db.Text
+
+  businesses BusinessCategoryAssignment[]
+
+  @@map("business_categories")
+}
+
+model BusinessCategoryAssignment {
+  businessId String @map("business_id") @db.Uuid
+  categoryId String @map("category_id") @db.Uuid
+
+  business Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category BusinessCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@id([businessId, categoryId])
+  @@index([categoryId])
+  @@map("business_category_assignments")
+}
+
+model BusinessReview {
+  id             String    @id @default(uuid()) @db.Uuid
+  businessId     String    @map("business_id") @db.Uuid
+  reviewerUserId String?   @map("reviewer_user_id") @db.Uuid
+  reviewStatus   String    @map("review_status") @db.VarChar(50)
+  reviewComment  String?   @map("review_comment") @db.Text
+  rating         Int?
+  reviewedAt     DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  reviewer User?    @relation("BusinessReviewer", fields: [reviewerUserId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@index([reviewerUserId])
+  @@map("business_reviews")
+}
+
+model BusinessMedia {
+  id         String  @id @default(uuid()) @db.Uuid
+  businessId String  @map("business_id") @db.Uuid
+  storageKey String  @map("storage_key") @db.VarChar(500)
+  mediaType  String  @map("media_type") @db.VarChar(100)
+  caption    String? @db.Text
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_media")
+}

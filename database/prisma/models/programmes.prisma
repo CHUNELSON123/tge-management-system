@@ -1,0 +1,94 @@
+// Programme and cohort management models.
+
+model Programme {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @unique @db.VarChar(200)
+  slug        String    @unique @db.VarChar(220)
+  description String?   @db.Text
+  status      String    @default("draft") @db.VarChar(50)
+  startDate   DateTime? @map("start_date") @db.Date
+  endDate     DateTime? @map("end_date") @db.Date
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  cohorts           Cohort[]
+  assignments       ProgrammeAssignment[]
+  resources         ResourceProgramme[]
+  announcements     AnnouncementProgrammeTarget[]
+  mentorAssignments MentorAssignment[]
+
+  @@map("programmes")
+}
+
+model Cohort {
+  id          String    @id @default(uuid()) @db.Uuid
+  programmeId String    @map("programme_id") @db.Uuid
+  name        String    @db.VarChar(200)
+  startDate   DateTime  @map("start_date") @db.Date
+  endDate     DateTime? @map("end_date") @db.Date
+  capacity    Int?
+  status      String    @default("planned") @db.VarChar(50)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  programme     Programme                  @relation(fields: [programmeId], references: [id], onDelete: Restrict)
+  enrollments   Enrollment[]
+  assignments   CohortAssignment[]
+  resources     ResourceCohort[]
+  announcements AnnouncementCohortTarget[]
+
+  @@unique([programmeId, name])
+  @@index([programmeId])
+  @@map("cohorts")
+}
+
+model Enrollment {
+  id          String    @id @default(uuid()) @db.Uuid
+  memberId    String    @map("member_id") @db.Uuid
+  cohortId    String    @map("cohort_id") @db.Uuid
+  enrolledAt  DateTime  @default(now()) @map("enrolled_at") @db.Timestamptz(6)
+  status      String    @default("enrolled") @db.VarChar(50)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  cohort Cohort @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+
+  @@unique([memberId, cohortId])
+  @@index([cohortId])
+  @@map("enrollments")
+}
+
+model ProgrammeAssignment {
+  id             String   @id @default(uuid()) @db.Uuid
+  programmeId    String   @map("programme_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  assignmentRole String   @map("assignment_role") @db.VarChar(100)
+  assignedAt     DateTime @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  status         String   @default("active") @db.VarChar(50)
+
+  programme Programme @relation(fields: [programmeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([programmeId, userId, assignmentRole])
+  @@index([userId])
+  @@map("programme_assignments")
+}
+
+model CohortAssignment {
+  id             String   @id @default(uuid()) @db.Uuid
+  cohortId       String   @map("cohort_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  assignmentRole String   @map("assignment_role") @db.VarChar(100)
+  assignedAt     DateTime @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  status         String   @default("active") @db.VarChar(50)
+
+  cohort Cohort @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([cohortId, userId, assignmentRole])
+  @@index([userId])
+  @@map("cohort_assignments")
+}

@@ -1,0 +1,66 @@
+// Conversations, participants, messages, and attachments.
+
+model Conversation {
+  id               String   @id @default(uuid()) @db.Uuid
+  title            String?  @db.VarChar(250)
+  conversationType String   @map("conversation_type") @db.VarChar(50)
+  createdByUserId  String   @map("created_by_user_id") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  createdBy    User                      @relation("ConversationCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([createdByUserId])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  conversationId  String    @map("conversation_id") @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  joinedAt        DateTime  @default(now()) @map("joined_at") @db.Timestamptz(6)
+  lastReadAt      DateTime? @map("last_read_at") @db.Timestamptz(6)
+  participantRole String?   @map("participant_role") @db.VarChar(100)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation("ConversationMemberships", fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String    @id @default(uuid()) @db.Uuid
+  conversationId String    @map("conversation_id") @db.Uuid
+  senderUserId   String    @map("sender_user_id") @db.Uuid
+  body           String    @db.Text
+  messageType    String    @map("message_type") @db.VarChar(50)
+  sentAt         DateTime  @default(now()) @map("sent_at") @db.Timestamptz(6)
+  editedAt       DateTime? @map("edited_at") @db.Timestamptz(6)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  conversation Conversation        @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User                @relation("MessageSender", fields: [senderUserId], references: [id], onDelete: Restrict)
+  attachments  MessageAttachment[]
+
+  @@index([conversationId, sentAt])
+  @@index([senderUserId])
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id               String   @id @default(uuid()) @db.Uuid
+  messageId        String   @map("message_id") @db.Uuid
+  storageKey       String   @map("storage_key") @db.VarChar(500)
+  originalFilename String   @map("original_filename") @db.VarChar(255)
+  mimeType         String   @map("mime_type") @db.VarChar(150)
+  fileSize         BigInt   @map("file_size")
+  uploadedAt       DateTime @default(now()) @map("uploaded_at") @db.Timestamptz(6)
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("message_attachments")
+}
