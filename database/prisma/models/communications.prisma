@@ -1,0 +1,123 @@
+// Announcements, audience targeting, notifications, and delivery tracking.
+
+model Announcement {
+  id              String    @id @default(uuid()) @db.Uuid
+  createdByUserId String    @map("created_by_user_id") @db.Uuid
+  title           String    @db.VarChar(250)
+  content         String    @db.Text
+  status          String    @default("draft") @db.VarChar(50)
+  category        String?   @db.VarChar(100)
+  publishAt       DateTime? @map("publish_at") @db.Timestamptz(6)
+  publishedAt     DateTime? @map("published_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  archivedAt      DateTime? @map("archived_at") @db.Timestamptz(6)
+
+  createdBy        User                          @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  memberTargets    AnnouncementMemberTarget[]
+  roleTargets      AnnouncementRoleTarget[]
+  programmeTargets AnnouncementProgrammeTarget[]
+  cohortTargets    AnnouncementCohortTarget[]
+  resources        AnnouncementResource[]
+  notifications    Notification[]
+
+  @@index([createdByUserId])
+  @@index([status])
+  @@index([publishAt])
+  @@map("announcements")
+}
+
+model AnnouncementMemberTarget {
+  announcementId String @map("announcement_id") @db.Uuid
+  memberId       String @map("member_id") @db.Uuid
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([announcementId, memberId])
+  @@map("announcement_member_targets")
+}
+
+model AnnouncementRoleTarget {
+  announcementId String @map("announcement_id") @db.Uuid
+  roleId         String @map("role_id") @db.Uuid
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  role         Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([announcementId, roleId])
+  @@map("announcement_role_targets")
+}
+
+model AnnouncementProgrammeTarget {
+  announcementId String @map("announcement_id") @db.Uuid
+  programmeId    String @map("programme_id") @db.Uuid
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  programme    Programme    @relation(fields: [programmeId], references: [id], onDelete: Cascade)
+
+  @@id([announcementId, programmeId])
+  @@map("announcement_programme_targets")
+}
+
+model AnnouncementCohortTarget {
+  announcementId String @map("announcement_id") @db.Uuid
+  cohortId       String @map("cohort_id") @db.Uuid
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  cohort       Cohort       @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
+  @@id([announcementId, cohortId])
+  @@map("announcement_cohort_targets")
+}
+
+model AnnouncementResource {
+  announcementId String @map("announcement_id") @db.Uuid
+  resourceId     String @map("resource_id") @db.Uuid
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  resource     Resource     @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@id([announcementId, resourceId])
+  @@map("announcement_resources")
+}
+
+model Notification {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  announcementId   String?   @map("announcement_id") @db.Uuid
+  title            String    @db.VarChar(250)
+  body             String    @db.Text
+  notificationType String    @map("notification_type") @db.VarChar(100)
+  readAt           DateTime? @map("read_at") @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  announcement Announcement?           @relation(fields: [announcementId], references: [id], onDelete: SetNull)
+  deliveries   CommunicationDelivery[]
+
+  @@index([userId, createdAt])
+  @@index([announcementId])
+  @@map("notifications")
+}
+
+model CommunicationDelivery {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  notificationId    String?   @map("notification_id") @db.Uuid
+  channel           String    @db.VarChar(50)
+  destination       String?   @db.VarChar(255)
+  status            String    @default("pending") @db.VarChar(50)
+  providerReference String?   @map("provider_reference") @db.VarChar(255)
+  sentAt            DateTime? @map("sent_at") @db.Timestamptz(6)
+  errorMessage      String?   @map("error_message") @db.Text
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  notification Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([notificationId])
+  @@index([status])
+  @@map("communication_deliveries")
+}

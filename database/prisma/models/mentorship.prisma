@@ -1,0 +1,77 @@
+// Mentorship assignments, sessions, objectives, and progress tracking.
+
+model MentorAssignment {
+  id          String    @id @default(uuid()) @db.Uuid
+  mentorId    String    @map("mentor_id") @db.Uuid
+  memberId    String    @map("member_id") @db.Uuid
+  programmeId String?   @map("programme_id") @db.Uuid
+  startDate   DateTime  @map("start_date") @db.Date
+  endDate     DateTime? @map("end_date") @db.Date
+  status      String    @default("active") @db.VarChar(50)
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  mentor     Mentor               @relation(fields: [mentorId], references: [id], onDelete: Restrict)
+  member     Member               @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  programme  Programme?           @relation(fields: [programmeId], references: [id], onDelete: SetNull)
+  sessions   MentoringSession[]
+  objectives MentoringObjective[]
+
+  @@index([mentorId])
+  @@index([memberId])
+  @@index([programmeId])
+  @@map("mentor_assignments")
+}
+
+model MentoringSession {
+  id             String    @id @default(uuid()) @db.Uuid
+  assignmentId   String    @map("assignment_id") @db.Uuid
+  title          String    @db.VarChar(250)
+  scheduledStart DateTime  @map("scheduled_start") @db.Timestamptz(6)
+  scheduledEnd   DateTime? @map("scheduled_end") @db.Timestamptz(6)
+  locationOrUrl  String?   @map("location_or_url") @db.VarChar(1000)
+  status         String    @default("scheduled") @db.VarChar(50)
+  notes          String?   @db.Text
+  outcome        String?   @db.Text
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  assignment MentorAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([assignmentId])
+  @@index([scheduledStart])
+  @@map("mentoring_sessions")
+}
+
+model MentoringObjective {
+  id           String    @id @default(uuid()) @db.Uuid
+  assignmentId String    @map("assignment_id") @db.Uuid
+  title        String    @db.VarChar(250)
+  description  String?   @db.Text
+  status       String    @default("not_started") @db.VarChar(50)
+  targetDate   DateTime? @map("target_date") @db.Date
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  assignment      MentorAssignment          @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  progressRecords MentoringProgressRecord[]
+
+  @@index([assignmentId])
+  @@map("mentoring_objectives")
+}
+
+model MentoringProgressRecord {
+  id               String   @id @default(uuid()) @db.Uuid
+  objectiveId      String   @map("objective_id") @db.Uuid
+  recordedByUserId String   @map("recorded_by_user_id") @db.Uuid
+  progressNote     String   @map("progress_note") @db.Text
+  progressValue    Float?   @map("progress_value")
+  recordedAt       DateTime @default(now()) @map("recorded_at") @db.Timestamptz(6)
+
+  objective  MentoringObjective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  recordedBy User               @relation(fields: [recordedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([objectiveId])
+  @@index([recordedByUserId])
+  @@map("mentoring_progress_records")
+}
