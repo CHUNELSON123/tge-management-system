@@ -1,10 +1,17 @@
+
 {
   "name": "database",
   "version": "1.0.0",
-  "description": "",
+  "description": "TGE shared database package",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "db:format": "prisma format",
+    "db:validate": "prisma validate",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "test": "echo \"Database tests are not configured yet\""
   },
   "keywords": [],
   "type": "commonjs",
