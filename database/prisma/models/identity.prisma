@@ -1,3 +1,10 @@
+enum AccountStatus {
+  PENDING_ACTIVATION
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
 // Identity and access management models.
 
 model Role {
@@ -35,23 +42,27 @@ model RolePermission {
 }
 
 model User {
-  id              String    @id @default(uuid()) @db.Uuid
-  roleId          String    @map("role_id") @db.Uuid
-  email           String    @unique @db.VarChar(255)
-  passwordHash    String    @map("password_hash") @db.Text
-  firstName       String    @map("first_name") @db.VarChar(100)
-  lastName        String    @map("last_name") @db.VarChar(100)
-  phone           String?   @db.VarChar(30)
-  status          String    @default("pending") @db.VarChar(50)
-  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(6)
-  lastLoginAt     DateTime? @map("last_login_at") @db.Timestamptz(6)
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id              String        @id @default(uuid()) @db.Uuid
+  roleId          String        @map("role_id") @db.Uuid
+  email           String        @unique @db.VarChar(255)
+  passwordHash    String        @map("password_hash") @db.Text
+  firstName       String        @map("first_name") @db.VarChar(100)
+  lastName        String        @map("last_name") @db.VarChar(100)
+  phone           String?       @db.VarChar(30)
+  status          AccountStatus @default(PENDING_ACTIVATION)
+  emailVerifiedAt DateTime?     @map("email_verified_at") @db.Timestamptz(6)
+  lastLoginAt     DateTime?     @map("last_login_at") @db.Timestamptz(6)
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime?     @map("deleted_at") @db.Timestamptz(6)
 
   role          Role    @relation(fields: [roleId], references: [id], onDelete: Restrict)
   memberProfile Member?
   mentorProfile Mentor?
+
+  membershipApplications MembershipApplication[]
+  applicationsReviewed   MembershipApplication[]  @relation("MembershipApplicationReviewer")
+  activationTokens       AccountActivationToken[]
 
   // Programme and cohort assignments
   programmeAssignments ProgrammeAssignment[]
