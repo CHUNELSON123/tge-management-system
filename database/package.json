@@ -1,30 +1,35 @@
-
 {
   "name": "database",
   "version": "1.0.0",
-  "description": "TGE shared database package",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
+  "main": "./dist/src/prisma-client.js",
+  "types": "./dist/src/prisma-client.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/prisma-client.d.ts",
+      "import": "./dist/src/prisma-client.js"
+    }
+  },
   "scripts": {
     "db:format": "prisma format",
     "db:validate": "prisma validate",
     "db:generate": "prisma generate",
+    "db:build": "tsc -p tsconfig.json",
     "db:studio": "prisma studio",
     "db:migrate:dev": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy",
-    "test": "echo \"Database tests are not configured yet\""
+    "db:migrate:deploy": "prisma migrate deploy"
   },
-  "keywords": [],
-  "type": "commonjs",
   "dependencies": {
-    "@prisma/adapter-pg": "^7.10.1",
-    "@prisma/client": "^7.10.1",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
     "dotenv": "^18.0.8",
     "pg": "^8.23.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
-    "prisma": "^7.10.1",
+    "prisma": "7.10.1",
     "typescript": "^7.0.2"
   }
 }
