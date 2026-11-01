@@ -7,6 +7,7 @@ import {
   authenticate,
   type AuthenticatedRequest,
 } from "../../../../common/middleware/authenticate.middleware.js";
+import { requirePermission } from "../../../../common/middleware/require-role.middleware.js";
 
 const resendInvitationSchema = z.object({
   email: z.string().trim().email().max(254),
@@ -18,7 +19,7 @@ export function createAccountRouter(
 ): Router {
   const router = Router();
 
-  router.post("/", authenticate, async (req: AuthenticatedRequest, res, next) => {
+  router.post("/", authenticate, requirePermission("users.manage"), async (req: AuthenticatedRequest, res, next) => {
     try {
       const input = createAccountSchema.parse(req.body);
       const actor = req.authenticatedUser;
@@ -60,7 +61,7 @@ export function createAccountRouter(
     }
   });
 
-  router.post("/resend-invitation", authenticate, async (req: AuthenticatedRequest, res, next) => {
+  router.post("/resend-invitation", authenticate, requirePermission("users.manage"), async (req: AuthenticatedRequest, res, next) => {
     try {
       const { email } = resendInvitationSchema.parse(req.body);
       const actor = req.authenticatedUser;

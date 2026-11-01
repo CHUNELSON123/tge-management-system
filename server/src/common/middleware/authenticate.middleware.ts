@@ -7,7 +7,10 @@ const jwtService = new JwtService();
 export interface AuthenticatedRequest extends Request {
   authenticatedUser?: {
     userId: string;
+    roleId: string;
     roleName: string;
+    tokenId: string;
+    tokenExpiresAt: Date;
   };
 }
 
@@ -27,6 +30,16 @@ export async function authenticate(
     const token = authorization.slice(7);
     const payload = jwtService.verifyAccessToken(token);
 
+    const revoked = await prisma.revokedAccessToken.findUnique({
+      where: { tokenId: payload.jti },
+      select: { id: true },
+    });
+
+    if (revoked) {
+      res.status(401).json({ message: "Invalid or expired access token." });
+      return;
+    }
+
     const user = await prisma.user.findFirst({
       where: {
         id: payload.sub,
@@ -43,7 +56,10 @@ export async function authenticate(
 
     req.authenticatedUser = {
       userId: user.id,
+      roleId: user.roleId,
       roleName: user.role.name,
+      tokenId: payload.jti,
+      tokenExpiresAt: new Date(payload.exp * 1000),
     };
 
     next();
