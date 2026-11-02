@@ -4,16 +4,19 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authService } from "@/modules/auth/services/auth.service";
 import type { AuthenticatedSessionResponse } from "@/modules/auth/types/auth.types";
+import { LanguageSwitcher } from "@/modules/i18n/language-switcher";
+import { useLanguage } from "@/modules/i18n/language-provider";
 
-const destinations: Record<string, string> = {
-  "System Administrator": "System Administration",
-  "Organisation Administrator": "Administration",
-  Member: "Member Portal",
-  Mentor: "Mentor Portal",
-  "Trainer / Facilitator": "Trainer Portal",
+const destinations: Record<string, "systemAdministration" | "administration" | "memberPortal" | "mentorPortal" | "trainerPortal"> = {
+  "System Administrator": "systemAdministration",
+  "Organisation Administrator": "administration",
+  Member: "memberPortal",
+  Mentor: "mentorPortal",
+  "Trainer / Facilitator": "trainerPortal",
 };
 
 export default function PortalHome() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [session, setSession] = useState<AuthenticatedSessionResponse["data"] | null>(null);
   useEffect(() => {
@@ -26,5 +29,5 @@ export default function PortalHome() {
     try { if (token) await authService.logout(token); }
     finally { localStorage.removeItem("tge.accessToken"); sessionStorage.removeItem("tge.accessToken"); router.replace("/login"); }
   }
-  return <main className="mx-auto w-full max-w-5xl p-8"><div className="flex justify-between"><h1 className="text-3xl font-bold">{session ? destinations[session.roleName] ?? "TGE Portal" : "Loading portal…"}</h1>{session&&<button onClick={signOut} className="rounded bg-[#0D6339] px-4 py-2 text-white">Sign out</button>}</div>{session&&<p className="mt-2 text-gray-600">Your authenticated session is active.</p>}</main>;
+  return <main className="mx-auto w-full max-w-5xl p-8"><div className="flex items-center justify-between gap-3"><h1 className="text-3xl font-bold">{session ? t(destinations[session.roleName] ?? "tgePortal") : t("portalLoading")}</h1><div className="flex items-center gap-3"><LanguageSwitcher />{session&&<button onClick={signOut} className="rounded bg-[#0D6339] px-4 py-2 text-white">{t("signOut")}</button>}</div></div>{session&&<p className="mt-2 text-gray-600">{t("sessionActive")}</p>}</main>;
 }

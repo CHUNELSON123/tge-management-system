@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authService } from "../services/auth.service";
+import { useLanguage } from "@/modules/i18n/language-provider";
 
 export function ProtectedPage({ children }: { children: React.ReactNode }) {
+  const { t } = useLanguage();
   const router = useRouter();
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -17,5 +19,5 @@ export function ProtectedPage({ children }: { children: React.ReactNode }) {
     });
     return () => { cancelled = true; };
   }, [router]);
-  return ready ? children : <main className="grid min-h-screen place-items-center">Checking your session…</main>;
+  return ready ? children : <main className="grid min-h-screen place-items-center">{t("checkingSession")}</main>;
 }

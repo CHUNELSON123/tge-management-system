@@ -3,7 +3,7 @@ import { ResetPasswordForm } from "@/modules/auth/components/reset-password-form
 
 export default function ResetPasswordPage({ searchParams }: PageProps<"/reset-password">) {
   return (
-    <Suspense fallback={<main className="mx-auto max-w-lg p-8">Loading reset form…</main>}>
+    <Suspense fallback={<main aria-busy="true" className="mx-auto max-w-lg p-8" />}>
       <ResetPasswordContent searchParams={searchParams} />
     </Suspense>
   );

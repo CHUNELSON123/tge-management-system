@@ -1,21 +1,25 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
+import { useLanguage } from "@/modules/i18n/language-provider";
 
 const quickLinks = [
-  { label: "Home", href: "/" },
-  { label: "About Us", href: "/about" },
-  { label: "Our Services", href: "/services" },
-  { label: "Contact", href: "/contact" },
-];
+  { label: "home", href: "/" },
+  { label: "aboutUs", href: "/about" },
+  { label: "ourServices", href: "/services" },
+  { label: "contact", href: "/contact" },
+] as const;
 
 const communityLinks = [
-  { label: "Membership", href: "#" },
-  { label: "Events", href: "#" },
-  { label: "Resources", href: "#" },
-];
+  { label: "membership", href: "#" },
+  { label: "events", href: "#" },
+  { label: "resources", href: "#" },
+] as const;
 
 export function SiteFooter() {
+  const { t } = useLanguage();
   return (
     <footer className="bg-[#0D6339] text-white">
       <div className="mx-auto max-w-7xl px-5 py-12 sm:px-8 lg:px-12">
@@ -32,13 +36,12 @@ export function SiteFooter() {
             </Link>
 
             <p className="mt-5 max-w-xs text-sm leading-7 text-white/75">
-              Empowering entrepreneurs and building a community for sustainable
-              growth and business development.
+              {t("empoweringEntrepreneurs")}
             </p>
           </div>
 
           <div>
-            <h3 className="mb-5 text-lg font-semibold">Quick Links</h3>
+            <h3 className="mb-5 text-lg font-semibold">{t("quickLinks")}</h3>
             <ul className="space-y-3">
               {quickLinks.map((item) => (
                 <li key={item.label}>
@@ -46,7 +49,7 @@ export function SiteFooter() {
                     href={item.href}
                     className="text-sm text-white/75 transition-colors hover:text-white"
                   >
-                    {item.label}
+                    {t(item.label)}
                   </Link>
                 </li>
               ))}
@@ -54,7 +57,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h3 className="mb-5 text-lg font-semibold">Community</h3>
+            <h3 className="mb-5 text-lg font-semibold">{t("community")}</h3>
             <ul className="space-y-3">
               {communityLinks.map((item) => (
                 <li key={item.label}>
@@ -62,14 +65,14 @@ export function SiteFooter() {
                     href={item.href}
                     className="text-sm text-white/75 transition-colors hover:text-white"
                   >
-                    {item.label}
+                    {t(item.label)}
                   </Link>
                 </li>
               ))}
             </ul>
 
             <div className="mt-6">
-              <h4 className="mb-3 text-sm font-semibold">Follow Us</h4>
+                <h4 className="mb-3 text-sm font-semibold">{t("followUs")}</h4>
               <div className="flex flex-wrap gap-4 text-sm text-white/75">
                 <Link href="#" className="hover:text-white" aria-label="Facebook">
                   Facebook
@@ -85,19 +88,19 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h3 className="mb-5 text-lg font-semibold">Contact Us</h3>
+            <h3 className="mb-5 text-lg font-semibold">{t("contactUs")}</h3>
             <ul className="space-y-4 text-sm text-white/75">
               <li className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-5 w-5 shrink-0" />
-                <span>Cameroon</span>
+                <span>{t("cameroon")}</span>
               </li>
               <li className="flex items-start gap-3">
                 <Phone className="mt-0.5 h-5 w-5 shrink-0" />
-                <span>Contact details coming soon</span>
+                <span>{t("contactDetailsComingSoon")}</span>
               </li>
               <li className="flex items-start gap-3">
                 <Mail className="mt-0.5 h-5 w-5 shrink-0" />
-                <span>Email details coming soon</span>
+                <span>{t("emailDetailsComingSoon")}</span>
               </li>
             </ul>
           </div>
@@ -105,7 +108,7 @@ export function SiteFooter() {
 
         <div className="mt-12 border-t border-white/20 pt-6 text-center">
           <p className="text-sm text-white/65">
-            © 2026 The Green Entrepreneur. All rights reserved.
+            © 2026 The Green Entrepreneur. {t("allRightsReserved")}
           </p>
         </div>
       </div>
