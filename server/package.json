@@ -4,7 +4,7 @@
     "description": "",
     "main": "dist/main.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "test": "tsx --test src/common/services/jwt.service.test.ts src/modules/auth/application/use-cases/create-account.usecase.test.ts src/modules/auth/application/use-cases/login.usecase.test.ts src/modules/auth/presentation/controllers/auth.controller.test.ts src/modules/auth/auth.lifecycle.e2e.test.ts ../client/src/modules/auth/utils/validate-login.test.ts ../client/src/modules/auth/services/auth.service.test.ts ../client/src/modules/i18n/messages.test.ts",
         "dev": "tsx watch src/main.ts",
         "build": "tsc",
         "start": "node dist/main.js",

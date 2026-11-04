@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useActivateAccount } from "../hooks/use-activate-account";
+import { useLanguage } from "@/modules/i18n/language-provider";
 
 interface ActivateAccountFormProps {
   token: string | null;
 }
 
 export function ActivateAccountForm({ token }: ActivateAccountFormProps) {
+  const { t, translateMessage } = useLanguage();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const { activateAccount, loading, error, success } = useActivateAccount();
@@ -18,17 +20,17 @@ export function ActivateAccountForm({ token }: ActivateAccountFormProps) {
     setValidationError(null);
 
     if (!token) {
-      setValidationError("Your activation link is missing its token.");
+      setValidationError(t("activationTokenMissing"));
       return;
     }
 
     if (password !== confirmPassword) {
-      setValidationError("Passwords do not match.");
+      setValidationError(t("passwordsDoNotMatch"));
       return;
     }
 
     if (password.length < 8) {
-      setValidationError("Password must contain at least 8 characters.");
+      setValidationError(t("passwordMinimum"));
       return;
     }
 
@@ -38,7 +40,7 @@ export function ActivateAccountForm({ token }: ActivateAccountFormProps) {
   if (success) {
     return (
       <div className="rounded-lg bg-green-50 p-5 text-green-800">
-        Your TGE account has been activated successfully.
+        {t("accountActivated")}
       </div>
     );
   }
@@ -47,7 +49,7 @@ export function ActivateAccountForm({ token }: ActivateAccountFormProps) {
     <form onSubmit={handleSubmit} className="mt-7 space-y-5">
       <div>
         <label htmlFor="password" className="mb-2 block text-sm font-medium">
-          Create password
+          {t("newPassword")}
         </label>
         <input
           id="password"
@@ -64,7 +66,7 @@ export function ActivateAccountForm({ token }: ActivateAccountFormProps) {
 
       <div>
         <label htmlFor="confirm-password" className="mb-2 block text-sm font-medium">
-          Confirm password
+          {t("confirmPassword")}
         </label>
         <input
           id="confirm-password"
@@ -81,7 +83,7 @@ export function ActivateAccountForm({ token }: ActivateAccountFormProps) {
 
       {(error || validationError) && (
         <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
-          {validationError || error}
+          {validationError || translateMessage(error ?? "")}
         </p>
       )}
 
@@ -90,7 +92,7 @@ export function ActivateAccountForm({ token }: ActivateAccountFormProps) {
         disabled={loading || !token}
         className="w-full rounded-lg bg-blue-700 px-4 py-3 font-semibold text-white hover:bg-blue-800 disabled:opacity-50"
       >
-        {loading ? "Activating..." : "Activate account"}
+        {loading ? t("activating") : t("activate")}
       </button>
     </form>
   );

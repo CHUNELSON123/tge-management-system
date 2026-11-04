@@ -63,6 +63,8 @@ model User {
   membershipApplications MembershipApplication[]
   applicationsReviewed   MembershipApplication[]  @relation("MembershipApplicationReviewer")
   activationTokens       AccountActivationToken[]
+  revokedAccessTokens    RevokedAccessToken[]
+  passwordResetTokens    PasswordResetToken[]
 
   // Programme and cohort assignments
   programmeAssignments ProgrammeAssignment[]
@@ -108,6 +110,35 @@ model User {
   @@index([roleId])
   @@map("users")
 }
+
+model RevokedAccessToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenId   String   @unique @map("token_id") @db.Uuid
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  revokedAt DateTime @default(now()) @map("revoked_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId])
+  @@map("revoked_access_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.VarChar(64)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
 
 model Member {
   id               String    @id @default(uuid()) @db.Uuid
