@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
 import { authModule, authRouter, accountRouter } from "./modules/auth/auth.module.js";
+import { publicPagesRouter, publicBusinessesRouter } from "./modules/public-pages/public-pages.module.js";
 
 export function createApp() {
   const app = express();
@@ -17,6 +18,8 @@ export function createApp() {
   const appController = new AppController(new AppService());
 
   app.use("/api", appController.router);
+  app.use("/api/public", publicPagesRouter);
+  app.use("/api/public", publicBusinessesRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/auth/accounts", accountRouter);
   app.use("/api/membership-applications", authModule);

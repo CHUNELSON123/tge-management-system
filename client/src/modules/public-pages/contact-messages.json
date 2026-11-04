@@ -1,0 +1,16 @@
+{
+  "en": {
+    "eyebrow": "Contact Us", "heading": "Get in Touch", "subheading": "We’d love to hear from you.",
+    "intro": "Whether you have a question, partnership proposal, or need support, our team is here to help.",
+    "connect": "Let’s Connect", "channels": "Reach out to us using any of the channels below.",
+    "office": "Our Office", "officeValue": "Buea, Southwest Region, Republic of Cameroon", "email": "Email Us", "phone": "Call Us", "hours": "Office Hours", "hoursValue": "Monday - Friday: 8:00 AM - 5:00 PM; Saturday: 9:00 AM - 1:00 PM",
+    "sendMessage": "Send Us a Message", "formCopy": "Fill out the form below and we will get back to you as soon as possible.", "fullName": "Full Name", "emailAddress": "Email Address", "subject": "Subject", "message": "Your Message", "consent": "I agree to the privacy policy and consent to being contacted.", "privacy": "privacy policy", "submit": "Send Message", "sending": "Sending…", "success": "Thank you. Your message has been received.", "error": "We could not send your message. Please try again later.", "rateLimit": "Too many enquiries. Please wait before trying again.", "partnerTitle": "Interested in partnering with TGE?", "partnerCopy": "We are always open to new collaborations that drive sustainable impact.", "partnerLink": "Contact us about partnerships"
+  },
+  "fr": {
+    "eyebrow": "Nous contacter", "heading": "Restons en contact", "subheading": "Nous serions ravis de vous lire.",
+    "intro": "Une question, une proposition de partenariat ou besoin d’aide ? Notre équipe est là pour vous accompagner.",
+    "connect": "Échangeons", "channels": "Contactez-nous par l’un des moyens suivants.",
+    "office": "Notre bureau", "officeValue": "Buéa, Région du Sud-Ouest, République du Cameroun", "email": "Nous écrire", "phone": "Nous appeler", "hours": "Heures d’ouverture", "hoursValue": "Lundi - vendredi : 8 h 00 - 17 h 00 ; samedi : 9 h 00 - 13 h 00",
+    "sendMessage": "Envoyez-nous un message", "formCopy": "Remplissez le formulaire ci-dessous et nous vous répondrons dès que possible.", "fullName": "Nom complet", "emailAddress": "Adresse e-mail", "subject": "Objet", "message": "Votre message", "consent": "J’accepte la politique de confidentialité et consens à être contacté(e).", "privacy": "politique de confidentialité", "submit": "Envoyer le message", "sending": "Envoi…", "success": "Merci. Votre message a bien été reçu.", "error": "Votre message n’a pas pu être envoyé. Veuillez réessayer.", "rateLimit": "Trop de demandes. Veuillez patienter avant de réessayer.", "partnerTitle": "Vous souhaitez établir un partenariat avec TGE ?", "partnerCopy": "Nous sommes toujours ouverts à des collaborations porteuses d’un impact durable.", "partnerLink": "Nous contacter pour un partenariat"
+  }
+}
