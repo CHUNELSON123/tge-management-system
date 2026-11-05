@@ -12,8 +12,19 @@ export class PrismaMembershipApplicationRepository
       "reviewedAt" | "userId" | "createdAt" | "updatedAt"
     >,
   ): Promise<MembershipApplication> {
-    return prisma.membershipApplication.create({
-      data: application,
+    return prisma.$transaction(async (tx) => {
+      // Serialize requests for the same email without adding a parallel record or
+      // disclosing whether that email already belongs to an application.
+      const applicantEmail = application.applicantEmail.trim().toLowerCase();
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${applicantEmail}))`;
+      const existing = await tx.membershipApplication.findFirst({
+        where: { applicantEmail: { equals: applicantEmail, mode: "insensitive" } },
+        orderBy: { createdAt: "desc" },
+      });
+      if (existing) return existing;
+      return tx.membershipApplication.create({
+        data: { ...application, applicantEmail },
+      });
     });
   }
 }

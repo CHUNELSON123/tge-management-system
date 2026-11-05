@@ -11,14 +11,14 @@ export function createMembershipApplicationRouter(
 ): Router {
   const router = Router();
 
-  router.post("/", async (req, res, next) => {
+  router.post("/", async (req, res) => {
     try {
       const input = createMembershipApplicationSchema.parse(req.body);
-      const application = await createApplication.execute(input);
+      await createApplication.execute(input);
 
       res.status(201).json({
-        message: "Membership application submitted successfully.",
-        data: application,
+        message: "Membership application received. TGE will review your application.",
+        data: { received: true },
       });
     } catch (error) {
       if (error instanceof ZodError) {
@@ -28,7 +28,7 @@ export function createMembershipApplicationRouter(
         });
         return;
       }
-      next(error);
+      res.status(503).json({ message: "Membership applications are temporarily unavailable. Please try again later." });
     }
   });
 
