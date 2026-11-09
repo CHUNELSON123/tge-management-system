@@ -1,9 +1,28 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useSyncExternalStore } from "react";
 import { isLocale, messages, translateApiMessage, type Locale, type TranslationKey } from "./messages";
 
 const STORAGE_KEY = "tge.language";
+const LANGUAGE_CHANGE_EVENT = "tge:language-changed";
+
+function subscribeToLanguage(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(LANGUAGE_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(LANGUAGE_CHANGE_EVENT, onChange);
+  };
+}
+
+function getLanguageSnapshot(): Locale {
+  const saved = window.localStorage.getItem(STORAGE_KEY);
+  return isLocale(saved) ? saved : "en";
+}
+
+function getServerLanguageSnapshot(): Locale {
+  return "en";
+}
 
 interface LanguageContextValue {
   locale: Locale;
@@ -15,42 +34,22 @@ interface LanguageContextValue {
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("en");
-  const [preferenceLoaded, setPreferenceLoaded] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    Promise.resolve().then(() => {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (active) {
-        if (isLocale(saved)) setLocaleState(saved);
-        setPreferenceLoaded(true);
-      }
-    });
-    return () => { active = false; };
+  const locale = useSyncExternalStore(subscribeToLanguage, getLanguageSnapshot, getServerLanguageSnapshot);
+  const setLocale = useCallback((next: Locale) => {
+    window.localStorage.setItem(STORAGE_KEY, next);
+    window.dispatchEvent(new Event(LANGUAGE_CHANGE_EVENT));
   }, []);
 
   useEffect(() => {
     document.documentElement.lang = locale;
-    if (preferenceLoaded) window.localStorage.setItem(STORAGE_KEY, locale);
-  }, [locale, preferenceLoaded]);
-
-  useEffect(() => {
-    function syncLocale(event: StorageEvent) {
-      if (event.key === STORAGE_KEY && isLocale(event.newValue)) {
-        setLocaleState(event.newValue);
-      }
-    }
-    window.addEventListener("storage", syncLocale);
-    return () => window.removeEventListener("storage", syncLocale);
-  }, []);
+  }, [locale]);
 
   const value = useMemo<LanguageContextValue>(() => ({
     locale,
-    setLocale: (next) => setLocaleState(next),
+    setLocale,
     t: (key) => messages[locale][key],
     translateMessage: (message) => translateApiMessage(message, locale),
-  }), [locale]);
+  }), [locale, setLocale]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

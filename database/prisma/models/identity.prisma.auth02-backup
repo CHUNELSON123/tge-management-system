@@ -1,0 +1,134 @@
+// Identity and access management models.
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  users               User[]
+  permissions         RolePermission[]
+  announcementTargets AnnouncementRoleTarget[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique @db.VarChar(150)
+  description String? @db.Text
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  id              String    @id @default(uuid()) @db.Uuid
+  roleId          String    @map("role_id") @db.Uuid
+  email           String    @unique @db.VarChar(255)
+  passwordHash    String    @map("password_hash") @db.Text
+  firstName       String    @map("first_name") @db.VarChar(100)
+  lastName        String    @map("last_name") @db.VarChar(100)
+  phone           String?   @db.VarChar(30)
+  status          String    @default("pending") @db.VarChar(50)
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(6)
+  lastLoginAt     DateTime? @map("last_login_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  role          Role    @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  memberProfile Member?
+  mentorProfile Mentor?
+
+  // Programme and cohort assignments
+  programmeAssignments ProgrammeAssignment[]
+  cohortAssignments    CohortAssignment[]
+
+  // Resource uploads
+  resourcesUploaded        Resource[]
+  resourceVersionsUploaded ResourceVersion[] @relation("ResourceVersionUploader")
+
+  // Events
+  eventsCreated         Event[]
+  eventStaffAssignments EventStaffAssignment[]
+
+  // Mentorship progress
+  progressRecordsRecorded MentoringProgressRecord[]
+
+  // Announcements and notifications
+  announcementsCreated    Announcement[]
+  notifications           Notification[]
+  communicationDeliveries CommunicationDelivery[]
+
+  // Messaging
+  conversationsCreated    Conversation[]            @relation("ConversationCreator")
+  conversationMemberships ConversationParticipant[] @relation("ConversationMemberships")
+  messagesSent            Message[]                 @relation("MessageSender")
+
+  // Business directory
+  businessReviewsGiven BusinessReview[] @relation("BusinessReviewer")
+
+  // Website content
+  pagesCreated Page[] @relation("PageCreator")
+  pagesUpdated Page[] @relation("PageUpdater")
+  newsAuthored News[] @relation("NewsAuthor")
+
+  // Contact enquiries
+  contactEnquiriesSubmitted ContactEnquiry[] @relation("EnquirySubmitter")
+  contactEnquiriesAssigned  ContactEnquiry[] @relation("EnquiryAssignee")
+
+  // System auditing and configuration
+  auditLogs             AuditLog[]
+  systemSettingsUpdated SystemSetting[]
+
+  @@index([roleId])
+  @@map("users")
+}
+
+model Member {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @unique @map("user_id") @db.Uuid
+  membershipNo     String?   @unique @map("membership_no") @db.VarChar(100)
+  joinedAt         DateTime? @map("joined_at") @db.Timestamptz(6)
+  membershipStatus String    @default("active") @map("membership_status") @db.VarChar(50)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user                User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollments         Enrollment[]
+  eventRegistrations  EventRegistration[]
+  mentorAssignments   MentorAssignment[]
+  announcementTargets AnnouncementMemberTarget[]
+  businesses          Business[]
+
+  @@map("members")
+}
+
+model Mentor {
+  id                     String   @id @default(uuid()) @db.Uuid
+  userId                 String   @unique @map("user_id") @db.Uuid
+  expertise              String?  @db.Text
+  professionalBackground String?  @map("professional_background") @db.Text
+  availability           String?  @db.Text
+  status                 String   @default("active") @db.VarChar(50)
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignments MentorAssignment[]
+
+  @@map("mentors")
+}

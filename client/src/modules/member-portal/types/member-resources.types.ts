@@ -1,0 +1,1 @@
+export interface MemberResource { id: string; title: string; description: string | null; category: string; resourceType: string; version: number | null; mimeType: string | null; fileSize: number | null; publishedAt: string | null }
