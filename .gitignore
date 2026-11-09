@@ -6,3 +6,4 @@ dist/
 !.env.example
 
 server/.env
+client/.env
