@@ -1,0 +1,6 @@
+interface:
+  display_name: "Commit Changes"
+  short_description: "Commit requested changes using repository standards"
+  default_prompt: "Use $commit-changes to review, validate, and commit the changes for the current task."
+policy:
+  allow_implicit_invocation: true
