@@ -15,3 +15,6 @@ coverage/
 *.tsbuildinfo
 *.pem
 *.key
+
+# Temporary Microsoft Office lock files.
+~$*

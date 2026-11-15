@@ -42,23 +42,31 @@ model RolePermission {
 }
 
 model User {
-  id              String        @id @default(uuid()) @db.Uuid
-  roleId          String        @map("role_id") @db.Uuid
-  email           String        @unique @db.VarChar(255)
-  passwordHash    String        @map("password_hash") @db.Text
-  firstName       String        @map("first_name") @db.VarChar(100)
-  lastName        String        @map("last_name") @db.VarChar(100)
-  phone           String?       @db.VarChar(30)
-  status          AccountStatus @default(PENDING_ACTIVATION)
-  emailVerifiedAt DateTime?     @map("email_verified_at") @db.Timestamptz(6)
-  lastLoginAt     DateTime?     @map("last_login_at") @db.Timestamptz(6)
-  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt       DateTime?     @map("deleted_at") @db.Timestamptz(6)
+  id                String        @id @default(uuid()) @db.Uuid
+  roleId            String        @map("role_id") @db.Uuid
+  email             String        @unique @db.VarChar(255)
+  passwordHash      String        @map("password_hash") @db.Text
+  firstName         String        @map("first_name") @db.VarChar(100)
+  lastName          String        @map("last_name") @db.VarChar(100)
+  phone             String?       @db.VarChar(30)
+  location          String?       @db.VarChar(255)
+  dateOfBirth       DateTime?     @map("date_of_birth") @db.Date
+  gender            String?       @db.VarChar(50)
+  nationality       String?       @db.VarChar(100)
+  preferredLanguage String?       @map("preferred_language") @db.VarChar(5)
+  timezone          String?       @db.VarChar(100)
+  bio               String?       @db.VarChar(250)
+  status            AccountStatus @default(PENDING_ACTIVATION)
+  emailVerifiedAt   DateTime?     @map("email_verified_at") @db.Timestamptz(6)
+  lastLoginAt       DateTime?     @map("last_login_at") @db.Timestamptz(6)
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt         DateTime?     @map("deleted_at") @db.Timestamptz(6)
 
-  role          Role    @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  role          Role                @relation(fields: [roleId], references: [id], onDelete: Restrict)
   memberProfile Member?
   mentorProfile Mentor?
+  profilePhoto  MemberProfilePhoto?
 
   membershipApplications MembershipApplication[]
   applicationsReviewed   MembershipApplication[]  @relation("MembershipApplicationReviewer")
@@ -156,6 +164,17 @@ model Member {
   businesses          Business[]
 
   @@map("members")
+}
+
+model MemberProfilePhoto {
+  userId      String   @id @map("user_id") @db.Uuid
+  contentType String   @map("content_type") @db.VarChar(50)
+  data        Bytes    @db.ByteA
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("member_profile_photos")
 }
 
 model Mentor {

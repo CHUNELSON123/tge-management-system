@@ -16,7 +16,7 @@ export class PrismaMembershipApplicationRepository
       // Serialize requests for the same email without adding a parallel record or
       // disclosing whether that email already belongs to an application.
       const applicantEmail = application.applicantEmail.trim().toLowerCase();
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${applicantEmail}))`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${applicantEmail})::bigint)`;
       const existing = await tx.membershipApplication.findFirst({
         where: { applicantEmail: { equals: applicantEmail, mode: "insensitive" } },
         orderBy: { createdAt: "desc" },
