@@ -19,9 +19,18 @@ export default function PortalHome() {
   const router = useRouter();
   const [session, setSession] = useState<AuthenticatedSessionResponse["data"] | null>(null);
   useEffect(() => {
+    let cancelled = false;
     const token = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");
     if (!token) { router.replace("/login"); return; }
-    authService.getSession(token).then((result) => setSession(result.data)).catch(() => router.replace("/login"));
+    authService.getSession(token)
+      .then((result) => { if (!cancelled) setSession(result.data); })
+      .catch(() => {
+        if (cancelled) return;
+        localStorage.removeItem("tge.accessToken");
+        sessionStorage.removeItem("tge.accessToken");
+        router.replace("/login");
+      });
+    return () => { cancelled = true; };
   }, [router]);
   async function signOut() {
     const token = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");

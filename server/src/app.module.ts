@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import { errorHandler } from "./common/middleware/error-handler.middleware.js";
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
 import { authModule, authRouter, accountRouter } from "./modules/auth/auth.module.js";
@@ -24,8 +25,7 @@ export function createApp() {
   app.use("/api/auth/accounts", accountRouter);
   app.use("/api/membership-applications", authModule);
 
+  app.use(errorHandler);
+
   return app;
 }
-
-
-

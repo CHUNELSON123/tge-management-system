@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authService } from "../services/auth.service";
 import { useLanguage } from "@/modules/i18n/language-provider";
@@ -9,11 +9,13 @@ export function ProtectedPage({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  useLayoutEffect(() => () => { setReady(false); }, []);
   useEffect(() => {
     let cancelled = false;
     const token = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");
     if (!token) { router.replace("/login"); return; }
     authService.getSession(token).then(() => { if (!cancelled) setReady(true); }).catch(() => {
+      if (cancelled) return;
       localStorage.removeItem("tge.accessToken"); sessionStorage.removeItem("tge.accessToken");
       router.replace("/login");
     });
