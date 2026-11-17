@@ -102,7 +102,10 @@ jobs:
       - name: Test production error responses
         run: node --test server/dist/common/middleware/error-handler.middleware.test.js
       - name: Typecheck client
-        run: npm exec --prefix client -- tsc --noEmit --project client/tsconfig.json
+        working-directory: client
+        run: |
+          npm exec -- next typegen
+          npm exec -- tsc --noEmit
       - name: Build client
         run: npm run build --prefix client
 
