@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
+import { createApiRateLimiter } from "./api-rate-limit.middleware.js";
 import { once } from "node:events";
 import { JwtService } from "../services/jwt.service.js";
 import { createAuthenticateMiddleware } from "./authenticate.middleware.js";
@@ -18,6 +19,7 @@ test("missing revocation table produces a safe server error, not an invalid-toke
   const database = { revokedAccessToken: { findUnique: lookup } } as unknown as Parameters<typeof createAuthenticateMiddleware>[0];
   const token = new JwtService().signAccessToken("00000000-0000-4000-8000-000000000001");
   const app = express();
+  app.use(createApiRateLimiter());
   app.get("/protected", createAuthenticateMiddleware(database), (_req, res) => res.json({ allowed: true }));
   app.use(errorHandler);
   const server = app.listen(0, "127.0.0.1");

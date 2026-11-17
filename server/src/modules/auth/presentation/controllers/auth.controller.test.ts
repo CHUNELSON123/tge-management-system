@@ -1,12 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
+import { createApiRateLimiter } from "../../../../common/middleware/api-rate-limit.middleware.js";
 import { createServer } from "node:http";
 import { once } from "node:events";
 import { createAuthRouter } from "./auth.controller.js";
 
 test("login route returns only the agreed access-token contract", async () => {
   const app = express();
+  app.use("/api", createApiRateLimiter());
   app.use(express.json());
   app.use("/api/auth", createAuthRouter({ execute: async () => ({ accessToken: "signed-token" }) } as never, {} as never));
   const server = createServer(app);
@@ -27,7 +29,9 @@ test("login route returns only the agreed access-token contract", async () => {
 });
 
 test("login route rejects invalid input and credentials", async () => {
-  const app = express(); app.use(express.json());
+  const app = express();
+  app.use("/api", createApiRateLimiter());
+  app.use(express.json());
   app.use("/api/auth", createAuthRouter({ execute: async () => { throw new Error("INVALID_CREDENTIALS"); } } as never, {} as never));
   const server=createServer(app); server.listen(0); await once(server,"listening");
   const address=server.address(); if(!address||typeof address==="string")throw new Error("Test server did not bind.");
