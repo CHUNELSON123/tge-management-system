@@ -19,6 +19,30 @@ The automated lifecycle uses an in-process email adapter; it sends no real passw
 
 Never paste connection credentials, JWTs, passwords, or reset/activation links into test evidence.
 
+## API request limiting
+
+`createApp()` mounts the shared limiter on `/api` before JSON parsing, authentication,
+and all routers. Current and future routes under `/api` share a budget of 300 requests
+per minute per client IP, including unsuccessful requests. Excess requests receive
+HTTP 429 with a JSON message, `Retry-After`, `RateLimit`, and `RateLimit-Policy` headers.
+Health checks under `/api` also count toward the budget. CORS preflight requests are
+handled before the limiter.
+
+The default store is in memory per application instance; restarting the process
+resets its counters. Multiple server instances need a shared store to enforce a
+combined limit. Express retains its default `trust proxy: false`: configure only
+your actual trusted proxy addresses before deploying behind a reverse proxy, so
+client IPs are identified correctly without trusting arbitrary forwarding headers.
+
+Run the database-free limiter regressions from `server/`:
+
+```powershell
+node --import tsx --test src/common/middleware/api-rate-limit.middleware.test.ts src/app.module.test.ts
+```
+
+These tests verify shared budgets across routes and methods, separate client IPs,
+JSON rejection and retry headers, and coverage of routes added after app creation.
+
 ## Login navigation browser regression
 
 With the current client source running locally and Google Chrome installed:
