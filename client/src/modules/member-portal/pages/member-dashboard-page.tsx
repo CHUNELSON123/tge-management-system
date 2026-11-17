@@ -37,15 +37,13 @@ export function MemberDashboardPage() {
   const [requestVersion, setRequestVersion] = useState(0);
 
   const load = useCallback((signal: AbortSignal) => {
-    setLoading(true);
-    setFailed(false);
     const accessToken = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");
     if (!accessToken) {
       router.replace("/login");
       return;
     }
 
-    memberDashboardService.getDashboard(accessToken, signal).then(setDashboard).catch((error: unknown) => {
+    memberDashboardService.getDashboard(accessToken, signal).then((result) => { if (!signal.aborted) setDashboard(result); }).catch((error: unknown) => {
       if (signal.aborted) return;
       if (error instanceof MemberDashboardRequestError && error.status === 401) {
         localStorage.removeItem("tge.accessToken");
@@ -58,6 +56,13 @@ export function MemberDashboardPage() {
       if (!signal.aborted) setLoading(false);
     });
   }, [router]);
+
+  const [previousRequest, setPreviousRequest] = useState({ load, requestVersion });
+  if (previousRequest.load !== load || previousRequest.requestVersion !== requestVersion) {
+    setPreviousRequest({ load, requestVersion });
+    setLoading(true);
+    setFailed(false);
+  }
 
   useEffect(() => {
     const controller = new AbortController();

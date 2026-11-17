@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Bell, ChevronDown, Menu, UserRound, X } from "lucide-react";
@@ -123,7 +124,7 @@ export function SiteHeader() {
             className="inline-flex min-h-11 items-center gap-2 rounded-lg px-1.5 py-1 text-left hover:bg-[#F2F6F4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A] focus-visible:ring-offset-2"
           >
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#EAF3ED] text-[#075C32]" aria-hidden="true">
-              {memberPhotoUrl ? <img src={memberPhotoUrl} alt="" className="h-full w-full rounded-full object-cover" /> : <UserRound size={20} />}
+              {memberPhotoUrl ? <Image unoptimized src={memberPhotoUrl} alt="" width={40} height={40} className="h-full w-full rounded-full object-cover" /> : <UserRound size={20} />}
             </span>
             {!compact && <span className="hidden max-w-28 text-xs font-semibold leading-4 text-[#17211B] xl:block">{displayName}</span>}
             <ChevronDown aria-hidden="true" size={15} className="hidden text-[#52645A] sm:block" />

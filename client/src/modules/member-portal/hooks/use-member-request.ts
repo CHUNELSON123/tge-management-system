@@ -8,12 +8,17 @@ export function useMemberRequest<T>(load: (token: string, signal?: AbortSignal) 
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [version, setVersion] = useState(0);
+  const [previousRequest, setPreviousRequest] = useState({ load, router, version });
+  if (previousRequest.load !== load || previousRequest.router !== router || previousRequest.version !== version) {
+    setPreviousRequest({ load, router, version });
+    setLoading(true);
+    setFailed(false);
+  }
   useEffect(() => {
     const controller = new AbortController();
     const token = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");
     if (!token) { router.replace("/login"); return () => controller.abort(); }
-    setLoading(true); setFailed(false);
-    load(token, controller.signal).then(setData).catch((error: unknown) => {
+    load(token, controller.signal).then((result) => { if (!controller.signal.aborted) setData(result); }).catch((error: unknown) => {
       if (controller.signal.aborted) return;
       if (typeof error === "object" && error !== null && "status" in error && error.status === 401) {
         localStorage.removeItem("tge.accessToken"); sessionStorage.removeItem("tge.accessToken"); router.replace("/login"); return;

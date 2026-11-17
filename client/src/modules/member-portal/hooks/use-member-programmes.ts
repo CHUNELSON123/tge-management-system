@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/modules/i18n/language-provider";
 import { memberLearningEventsService, MemberLearningEventsRequestError } from "../services/member-learning-events.service";
@@ -19,14 +19,19 @@ export function useMemberProgrammes() {
   const [view, setView] = useState<MemberProgrammeView>("enrolled");
   const [search, setSearch] = useState("");
   const [requestVersion, setRequestVersion] = useState(0);
+  const [previousRequest, setPreviousRequest] = useState({ router, requestVersion });
+
+  if (previousRequest.router !== router || previousRequest.requestVersion !== requestVersion) {
+    setPreviousRequest({ router, requestVersion });
+    setLoading(true);
+    setFailed(false);
+  }
 
   useEffect(() => {
     const controller = new AbortController();
     const token = accessToken();
     if (!token) { router.replace("/login"); return () => controller.abort(); }
-    setLoading(true);
-    setFailed(false);
-    memberLearningEventsService.getProgrammes(token, controller.signal).then(setProgrammes).catch((error: unknown) => {
+    memberLearningEventsService.getProgrammes(token, controller.signal).then((result) => { if (!controller.signal.aborted) setProgrammes(result); }).catch((error: unknown) => {
       if (controller.signal.aborted) return;
       if (error instanceof MemberLearningEventsRequestError && error.status === 401) {
         localStorage.removeItem("tge.accessToken"); sessionStorage.removeItem("tge.accessToken"); router.replace("/login"); return;
