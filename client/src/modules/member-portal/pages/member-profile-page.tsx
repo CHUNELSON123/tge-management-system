@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Award, BriefcaseBusiness, CalendarDays, Camera, CircleUserRound, Clock3, Mail, MapPin, Pencil, Phone, Save, ShieldCheck, UserRound, X } from "lucide-react";
@@ -56,14 +57,13 @@ export function MemberProfilePage() {
   const [requestVersion, setRequestVersion] = useState(0);
 
   const load = useCallback((signal: AbortSignal) => {
-    setLoading(true);
-    setError("");
     const token = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");
     if (!token) {
       router.replace("/login");
       return;
     }
     memberProfileService.getProfile(token, signal).then((data) => {
+      if (signal.aborted) return;
       setProfile(data);
       setDraft(asEditableProfile(data));
     }).catch((reason: unknown) => {
@@ -79,6 +79,13 @@ export function MemberProfilePage() {
       if (!signal.aborted) setLoading(false);
     });
   }, [router, t]);
+
+  const [previousRequest, setPreviousRequest] = useState({ load, requestVersion });
+  if (previousRequest.load !== load || previousRequest.requestVersion !== requestVersion) {
+    setPreviousRequest({ load, requestVersion });
+    setLoading(true);
+    setError("");
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -226,7 +233,7 @@ export function MemberProfilePage() {
         <article className="mt-5 grid gap-5 rounded-xl border border-[#E6ECE8] bg-white p-4 shadow-[0_2px_12px_#00000008] sm:p-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(250px,0.9fr)] lg:items-center">
           <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
             <div className="relative grid h-24 w-24 shrink-0 place-items-center self-center overflow-hidden rounded-full bg-[#EAF3ED] text-3xl font-bold text-[#075C32] sm:h-28 sm:w-28">
-              {photoUrl ? <img src={photoUrl} alt={fullName || t("profileTitle")} className="h-full w-full object-cover" /> : initials}
+              {photoUrl ? <Image unoptimized src={photoUrl} alt={fullName || t("profileTitle")} width={112} height={112} className="h-full w-full object-cover" /> : initials}
               <label className="absolute bottom-0 right-0 grid h-9 w-9 cursor-pointer place-items-center rounded-full border-2 border-white bg-[#F2F6F4] text-[#075C32] hover:bg-[#E4F3E9] focus-within:ring-2 focus-within:ring-[#147E4A]" title={t("profilePhotoChange")}>
                 <input type="file" accept="image/jpeg,image/png,image/webp" aria-label={t("profilePhotoChange")} onChange={uploadPhoto} disabled={photoSaving} className="sr-only" />
                 {photoSaving ? <span className="text-xs" aria-hidden="true">…</span> : <Camera aria-hidden="true" size={17} />}

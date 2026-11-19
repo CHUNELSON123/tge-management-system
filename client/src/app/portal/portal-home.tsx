@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authService } from "@/modules/auth/services/auth.service";
-import type { AuthenticatedSessionResponse } from "@/modules/auth/types/auth.types";
+import { useProtectedSession } from "@/modules/auth/components/protected-page";
 import { useLanguage } from "@/modules/i18n/language-provider";
 
 const destinations: Record<string, "systemAdministration" | "administration" | "memberPortal" | "mentorPortal" | "trainerPortal"> = {
@@ -17,12 +16,7 @@ const destinations: Record<string, "systemAdministration" | "administration" | "
 export default function PortalHome() {
   const { t } = useLanguage();
   const router = useRouter();
-  const [session, setSession] = useState<AuthenticatedSessionResponse["data"] | null>(null);
-  useEffect(() => {
-    const token = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");
-    if (!token) { router.replace("/login"); return; }
-    authService.getSession(token).then((result) => setSession(result.data)).catch(() => router.replace("/login"));
-  }, [router]);
+  const session = useProtectedSession();
   async function signOut() {
     const token = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");
     try { if (token) await authService.logout(token); }

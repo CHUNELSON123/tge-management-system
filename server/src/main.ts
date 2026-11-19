@@ -6,10 +6,10 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 
 const envResult = dotenv.config({
   path: resolve(currentDirectory, "../.env"),
-  override: true,
+  quiet: true,
 });
 
-if (envResult.error) {
+if (envResult.error && (envResult.error as NodeJS.ErrnoException).code !== "ENOENT") {
   throw envResult.error;
 }
 

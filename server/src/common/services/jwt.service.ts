@@ -21,6 +21,13 @@ export interface AccessTokenPayload {
   exp: number;
 }
 
+export class InvalidAccessTokenError extends Error {
+  constructor() {
+    super("INVALID_ACCESS_TOKEN");
+    this.name = "InvalidAccessTokenError";
+  }
+}
+
 export class JwtService {
   signAccessToken(userId: string): string {
     return jwt.sign(
@@ -48,7 +55,7 @@ export class JwtService {
       typeof payload.jti !== "string" ||
       typeof payload.exp !== "number"
     ) {
-      throw new Error("INVALID_ACCESS_TOKEN");
+      throw new InvalidAccessTokenError();
     }
 
     return { sub: payload.sub, jti: payload.jti, exp: payload.exp };

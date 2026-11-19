@@ -1,22 +1,13 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Geist, Geist_Mono } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { LanguageProvider } from "@/modules/i18n/language-provider";
 import { SiteFooter } from "@/modules/public-pages/components/site-footer";
 import { SiteHeader, SiteHeaderFallback } from "@/modules/public-pages/components/site-header";
 import { LanguageSwitcher } from "@/modules/i18n/language-switcher";
 import { MemberPublicPageShell } from "@/modules/member-portal/components/member-public-page-shell";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "The Green Entrepreneur",
@@ -27,14 +18,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-screen flex-col">
         <LanguageProvider>
           <Suspense fallback={<SiteHeaderFallback />}>
             <SiteHeader />
           </Suspense>
-          <div className="flex-1"><MemberPublicPageShell>{children}</MemberPublicPageShell></div>
+          <div className="flex-1">
+            <Suspense fallback={children}>
+              <MemberPublicPageShell>{children}</MemberPublicPageShell>
+            </Suspense>
+          </div>
           <SiteFooter />
           <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-[60] rounded-lg border border-[#D1DDD4] bg-white/95 p-1 text-[#1C1C1A] shadow-lg backdrop-blur sm:right-6">
             <LanguageSwitcher className="border-0 p-0" />

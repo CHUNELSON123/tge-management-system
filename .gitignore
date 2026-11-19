@@ -7,3 +7,14 @@ dist/
 
 server/.env
 client/.env
+
+# Runtime output can contain credentials or personal data.
+*.log
+logs/
+coverage/
+*.tsbuildinfo
+*.pem
+*.key
+
+# Temporary Microsoft Office lock files.
+~$*

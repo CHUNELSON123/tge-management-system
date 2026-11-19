@@ -18,7 +18,7 @@ export function LoginForm() {
   const [validationError,setValidationError]=useState<string|null>(null);
   const {login,loading,error,loginSuccessful,restoringSession}=useLogin();
 
-  useEffect(()=>{if(loginSuccessful)router.replace("/portal");},[loginSuccessful,router]);
+  useEffect(()=>{if(loginSuccessful&&!restoringSession)router.replace("/portal");},[loginSuccessful,restoringSession,router]);
 
   async function handleSubmit(event:React.FormEvent<HTMLFormElement>){
     event.preventDefault(); setValidationError(null);
