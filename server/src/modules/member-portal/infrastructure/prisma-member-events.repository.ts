@@ -4,6 +4,7 @@ import type { MemberEventDetails, MemberEventRecord, MemberEventsRepository } fr
 function toRecord(event: {
   id: string; title: string; eventType: string; description: string | null; startAt: Date; endAt: Date | null;
   timezone: string | null; venue: string | null; registrations?: Array<{ registrationStatus: string; registeredAt: Date }>;
+  registrationRequired: boolean; registrationDeadline: Date | null;
 }): MemberEventRecord {
   const registration = event.registrations?.[0];
   return {
@@ -17,6 +18,8 @@ function toRecord(event: {
     venue: event.venue,
     registrationStatus: registration?.registrationStatus ?? null,
     registeredAt: registration?.registeredAt.toISOString() ?? null,
+    registrationRequired: event.registrationRequired,
+    registrationDeadline: event.registrationDeadline?.toISOString() ?? null,
   };
 }
 
@@ -27,13 +30,10 @@ export class PrismaMemberEventsRepository implements MemberEventsRepository {
     const member = await this.database.member.findUnique({ where: { userId }, select: { id: true } });
     if (!member) return null;
     const events = await this.database.event.findMany({
-      where: {
-        status: "published",
-        registrations: { some: { memberId: member.id, registrationStatus: "registered", cancelledAt: null } },
-      },
+      where: { status: "published" },
       orderBy: [{ startAt: "asc" }, { id: "asc" }],
       select: {
-        id: true, title: true, eventType: true, description: true, startAt: true, endAt: true, timezone: true, venue: true,
+        id: true, title: true, eventType: true, description: true, startAt: true, endAt: true, timezone: true, venue: true, registrationRequired: true, registrationDeadline: true,
         registrations: { where: { memberId: member.id, registrationStatus: "registered", cancelledAt: null }, orderBy: { registeredAt: "desc" }, take: 1, select: { registrationStatus: true, registeredAt: true } },
       },
     });
@@ -46,11 +46,11 @@ export class PrismaMemberEventsRepository implements MemberEventsRepository {
     const event = await this.database.event.findFirst({
       where: { id: eventId, status: "published" },
       select: {
-        id: true, title: true, eventType: true, description: true, startAt: true, endAt: true, timezone: true, venue: true,
+        id: true, title: true, eventType: true, description: true, startAt: true, endAt: true, timezone: true, venue: true, registrationRequired: true, registrationDeadline: true,
         registrations: { where: { memberId: member.id, cancelledAt: null }, orderBy: { registeredAt: "desc" }, take: 1, select: { registrationStatus: true, registeredAt: true } },
       },
     });
     if (!event) return null;
-    return { ...toRecord(event), isUpcoming: event.startAt.getTime() >= now.getTime() };
+    return { ...toRecord(event), isUpcoming: event.startAt.getTime() > now.getTime(), registrationOpen: event.registrationRequired && event.startAt.getTime() > now.getTime() && (!event.registrationDeadline || event.registrationDeadline.getTime() > now.getTime()) };
   }
 }

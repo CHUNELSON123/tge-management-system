@@ -2,7 +2,7 @@ export interface MembershipApplicationInput {
   firstName: string;
   lastName: string;
   email: string;
-  phone?: string;
+  phone: string; location: string; dateOfBirth: string; gender: string; nationality: string; preferredLanguage: string | null; timezone: string | null; bio: string;
 }
 
 export class MembershipApplicationRequestError extends Error {
@@ -12,7 +12,7 @@ export class MembershipApplicationRequestError extends Error {
   }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export const membershipApplicationService = {
   async submit(input: MembershipApplicationInput): Promise<void> {

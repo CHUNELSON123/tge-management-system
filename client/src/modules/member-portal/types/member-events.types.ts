@@ -12,8 +12,11 @@ export interface MemberEvent {
   venue: string | null;
   registrationStatus: string | null;
   registeredAt: string | null;
+  registrationRequired: boolean;
+  registrationDeadline: string | null;
 }
 
 export interface MemberEventDetails extends MemberEvent {
   isUpcoming: boolean;
+  registrationOpen: boolean;
 }

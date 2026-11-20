@@ -31,12 +31,12 @@ export function useMemberNotifications() {
   }, [router]);
   const markRead = useCallback(async (id: string) => {
     setActionFailed(false);
-    try { await markMemberNotificationRead(id, token()); setNotifications((items) => items.map((item) => item.id === id ? { ...item, readAt: new Date().toISOString() } : item)); }
+    try { await markMemberNotificationRead(id, token()); setNotifications((items) => items.map((item) => item.id === id ? { ...item, readAt: new Date().toISOString() } : item)); window.dispatchEvent(new Event("tge:notifications-updated")); }
     catch (error) { handleActionError(error); }
   }, [handleActionError]);
   const markAllRead = useCallback(async () => {
     setActionFailed(false);
-    try { await markAllMemberNotificationsRead(token()); setNotifications((items) => items.map((item) => item.readAt ? item : { ...item, readAt: new Date().toISOString() })); }
+    try { await markAllMemberNotificationsRead(token()); setNotifications((items) => items.map((item) => item.readAt ? item : { ...item, readAt: new Date().toISOString() })); window.dispatchEvent(new Event("tge:notifications-updated")); }
     catch (error) { handleActionError(error); }
   }, [handleActionError]);
   return { notifications, loading, failed, actionFailed, markRead, markAllRead, retry: () => { setLoading(true); setFailed(false); setVersion((value) => value + 1); } };

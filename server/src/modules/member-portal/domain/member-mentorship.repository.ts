@@ -5,7 +5,7 @@ export interface MemberMentorshipAssignment {
   id: string; mentorName: string; expertise: string | null; programmeName: string | null; status: string; sessions: MemberMentorshipSession[];
 }
 export interface MemberMentorshipData {
-  assignments: MemberMentorshipAssignment[]; completedSessions: number; mentorshipHours: number | null;
+  assignments: MemberMentorshipAssignment[]; completedSessions: number; mentorshipHours: number | null; foundationComplete: boolean; secondStageComplete: boolean;
 }
 export interface MemberMentorshipRepository {
   findForUser(userId: string): Promise<MemberMentorshipData | null>;

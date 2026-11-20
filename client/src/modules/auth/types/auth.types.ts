@@ -25,6 +25,8 @@ export interface AuthenticatedSessionResponse {
   data: {
     userId: string;
     roleName: string;
+    displayName: string;
+    email: string;
   };
 }
 

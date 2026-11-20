@@ -64,9 +64,17 @@ model User {
   deletedAt         DateTime?     @map("deleted_at") @db.Timestamptz(6)
 
   role          Role                @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  websiteEntriesCreated WebsiteEntry[] @relation("WebsiteEntryCreator")
+  websiteEntriesUpdated WebsiteEntry[] @relation("WebsiteEntryUpdater")
+  websiteMediaCreated WebsiteMedia[] @relation("WebsiteMediaCreator")
+  websiteMediaUpdated WebsiteMedia[] @relation("WebsiteMediaUpdater")
   memberProfile Member?
+  paymentsRecorded PaymentRecord[] @relation("PaymentRecorder")
+  paymentsVoided PaymentRecord[] @relation("PaymentVoider")
+  chargesCreated MemberCharge[] @relation("ChargeCreator")
   mentorProfile Mentor?
   profilePhoto  MemberProfilePhoto?
+  presence      UserPresence?
 
   membershipApplications MembershipApplication[]
   applicationsReviewed   MembershipApplication[]  @relation("MembershipApplicationReviewer")
@@ -88,6 +96,7 @@ model User {
 
   // Mentorship progress
   progressRecordsRecorded MentoringProgressRecord[]
+  mentorshipReportsAuthored MentorshipQuarterlyReport[] @relation("MentorshipReportAuthor")
 
   // Announcements and notifications
   announcementsCreated    Announcement[]
@@ -106,6 +115,7 @@ model User {
   pagesCreated Page[] @relation("PageCreator")
   pagesUpdated Page[] @relation("PageUpdater")
   newsAuthored News[] @relation("NewsAuthor")
+  newsUpdated News[] @relation("NewsUpdater")
 
   // Contact enquiries
   contactEnquiriesSubmitted ContactEnquiry[] @relation("EnquirySubmitter")
@@ -162,6 +172,8 @@ model Member {
   mentorAssignments   MentorAssignment[]
   announcementTargets AnnouncementMemberTarget[]
   businesses          Business[]
+  charges             MemberCharge[]
+  registrationRequests ProgrammeRegistrationRequest[]
 
   @@map("members")
 }

@@ -14,7 +14,7 @@
   "scripts": {
     "db:format": "prisma format",
     "db:validate": "prisma validate",
-    "db:generate": "prisma generate",
+    "db:generate": "prisma generate && npm run db:build",
     "db:build": "tsc -p tsconfig.json",
     "db:studio": "prisma studio",
     "db:migrate:dev": "prisma migrate dev",

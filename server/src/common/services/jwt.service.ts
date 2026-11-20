@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { randomUUID } from "node:crypto";
 
-const ACCESS_TOKEN_TTL = "15m";
+const ACCESS_TOKEN_TTL = "14d";
 const JWT_ISSUER = "tge-management-api";
 const JWT_AUDIENCE = "tge-management-client";
 

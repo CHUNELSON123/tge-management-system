@@ -34,12 +34,13 @@ export function createAccountRouter(
       });
 
       res.status(201).json({
-        message: "Account created. Activation invitation sent.",
+        message: result.invitationSent ? "Account created. Activation invitation sent." : "Account created, but the invitation could not be sent. Resend it from Users & Roles.",
         data: {
           userId: result.user.id,
           email: result.user.email,
           status: result.user.status,
           activationExpiresAt: result.activationExpiresAt,
+          invitationSent: result.invitationSent,
         },
       });
     } catch (error) {
@@ -48,6 +49,10 @@ export function createAccountRouter(
         return;
       }
       if (error instanceof Error) {
+        if (error.message === "ADMIN_LIMIT_REACHED") {
+          res.status(409).json({ message: "The maximum of three administrators has been reached." });
+          return;
+        }
         if (error.name === "DuplicateAccountError") {
           res.status(409).json({ message: "An account with this email already exists." });
           return;

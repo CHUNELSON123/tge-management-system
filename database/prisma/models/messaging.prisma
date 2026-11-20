@@ -11,6 +11,7 @@ model Conversation {
   createdBy    User                      @relation("ConversationCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
   participants ConversationParticipant[]
   messages     Message[]
+  notifications Notification[]
 
   @@index([createdByUserId])
   @@map("conversations")
@@ -63,4 +64,11 @@ model MessageAttachment {
 
   @@index([messageId])
   @@map("message_attachments")
+}
+model UserPresence {
+  userId     String   @id @map("user_id") @db.Uuid
+  lastSeenAt DateTime @map("last_seen_at") @db.Timestamptz(6)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_presence")
 }

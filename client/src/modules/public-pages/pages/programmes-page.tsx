@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { BookOpen, BriefcaseBusiness, CalendarDays, ChartNoAxesCombined, Handshake, Leaf, UsersRound } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import { programmeCoverUrl } from "@/lib/programme-cover-url";
 import { useLanguage } from "@/modules/i18n/language-provider";
 import type { TranslationKey } from "@/modules/i18n/messages";
 import { publicPagesService, type PublicProgramme } from "../services/public-pages.service";
@@ -28,10 +30,10 @@ function ProgrammeCard({ programme, index }: { programme: PublicProgramme; index
   return (
     <article className="flex min-h-full flex-col overflow-hidden rounded-xl border border-[#E3EAE6] bg-white shadow-[0_3px_16px_#10251a0c]">
       <div className="relative flex h-24 items-center justify-center overflow-hidden bg-[linear-gradient(120deg,#E5F0E8,#F7F9F7)]">
-        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_20%_40%,#8bb89a_0,transparent_30%),radial-gradient(circle_at_80%_70%,#b1cbbb_0,transparent_35%)]" />
+        {programme.coverImageUrl ? <Image src={programmeCoverUrl(programme.coverImageUrl)} alt="" fill unoptimized sizes="(max-width: 640px) 100vw, 400px" className="object-cover" /> : <><div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_20%_40%,#8bb89a_0,transparent_30%),radial-gradient(circle_at_80%_70%,#b1cbbb_0,transparent_35%)]" />
         <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-[#087B49] text-white shadow-md">
           <ProgrammeIcon aria-hidden="true" size={24} strokeWidth={1.8} />
-        </span>
+        </span></>}
       </div>
       <div className="flex flex-1 flex-col p-4">
         <h3 className="text-lg font-bold leading-6 text-[#075C32]">{programme.name}</h3>
@@ -44,18 +46,7 @@ function ProgrammeCard({ programme, index }: { programme: PublicProgramme; index
             {programme.endDate && <span className="inline-flex items-center gap-1.5"><CalendarDays aria-hidden="true" size={15} className="text-[#087B49]" />{t("programmeEndDate")}: {formatDate(programme.endDate, locale)}</span>}
           </div>
         )}
-        <details className="group mt-4 border-t border-[#E9EEEB] pt-3">
-          <summary className="inline-flex min-h-9 cursor-pointer list-none items-center rounded-md border border-[#087B49] px-3 text-sm font-semibold text-[#087B49] hover:bg-[#F2F8F4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A] focus-visible:ring-offset-2 [&::-webkit-details-marker]:hidden">
-            <span className="group-open:hidden">{t("viewProgramme")}</span>
-            <span className="hidden group-open:inline">{t("hideProgramme")}</span>
-          </summary>
-          <div className="mt-3 rounded-md bg-[#F4F8F5] p-3 text-sm leading-5 text-[#39443E]">
-            <p className="font-semibold">{programme.name}</p>
-            <p className="mt-1">{programme.description || t("programmeDescriptionUnavailable")}</p>
-            {programme.startDate && <p className="mt-2">{t("programmeStartDate")}: {formatDate(programme.startDate, locale)}</p>}
-            {programme.endDate && <p>{t("programmeEndDate")}: {formatDate(programme.endDate, locale)}</p>}
-          </div>
-        </details>
+        <div className="mt-4 border-t border-[#E9EEEB] pt-3"><Link href={`/programmes/${encodeURIComponent(programme.slug)}`} className="inline-flex min-h-9 items-center rounded-md border border-[#087B49] px-3 text-sm font-semibold text-[#087B49] hover:bg-[#F2F8F4]">{t("viewProgramme")}</Link></div>
       </div>
     </article>
   );

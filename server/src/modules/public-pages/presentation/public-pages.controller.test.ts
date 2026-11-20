@@ -117,14 +117,17 @@ test("public home previews route reads the existing database models", async () =
   }
 });
 
-test("public contact and newsletter submissions validate requests and remain disabled until their contracts are approved", async () => {
+test("public submissions validate requests and newsletter subscriptions report duplicates", async () => {
   const app = express();
+  let subscribed = false;
   app.use(express.json());
   app.use("/api/public", createPublicPagesRouter(
     { execute: async () => ({ programmes: [], events: [], businesses: [], news: [] }) } as never,
     { execute: async () => [] } as never,
     { execute: async () => ({ upcoming: [], past: [] }) } as never,
     { execute: async () => null } as never,
+    undefined, undefined, undefined, undefined,
+    async (email, source) => { assert.equal(email, "visitor@example.test"); assert.equal(source, "public-footer"); if (subscribed) return { status: "already-subscribed" }; subscribed = true; return { status: "subscribed", notificationSent: true }; },
   ));
   const server = createServer(app);
   server.listen(0);
@@ -141,8 +144,11 @@ test("public contact and newsletter submissions validate requests and remain dis
     const invalidNewsletter = await fetch(`${base}/newsletter-subscriptions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "invalid" }) });
     assert.equal(invalidNewsletter.status, 400);
     const validNewsletter = await fetch(`${base}/newsletter-subscriptions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "visitor@example.test", source: "public-footer" }) });
-    assert.equal(validNewsletter.status, 503);
-    assert.match((await validNewsletter.json()).message, /temporarily unavailable/i);
+    assert.equal(validNewsletter.status, 201);
+    assert.equal((await validNewsletter.json()).status, "subscribed");
+    const duplicate = await fetch(`${base}/newsletter-subscriptions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "visitor@example.test", source: "public-footer" }) });
+    assert.equal(duplicate.status, 200);
+    assert.equal((await duplicate.json()).status, "already-subscribed");
   } finally {
     server.close();
   }

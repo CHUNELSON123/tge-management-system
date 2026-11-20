@@ -28,7 +28,6 @@ export class ResendAccountInvitationUseCase {
       throw new Error("ACCOUNT_NOT_PENDING_ACTIVATION");
     }
 
-    const activation = await this.createActivationToken.execute(user.id);
     const activationBaseUrl = process.env.ACTIVATION_URL;
 
     if (!activationBaseUrl) {
@@ -36,6 +35,7 @@ export class ResendAccountInvitationUseCase {
     }
 
     const activationUrl = new URL(activationBaseUrl);
+    const activation = await this.createActivationToken.execute(user.id);
     activationUrl.searchParams.set("token", activation.token);
 
     const safeFirstName = user.firstName.replace(/[&<>"']/g, (character) => ({

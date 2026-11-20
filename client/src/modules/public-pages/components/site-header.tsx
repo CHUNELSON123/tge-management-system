@@ -5,9 +5,13 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Bell, ChevronDown, Menu, UserRound, X } from "lucide-react";
 import { useLanguage } from "@/modules/i18n/language-provider";
+import { LanguageSwitcher } from "@/modules/i18n/language-switcher";
+import { authService } from "@/modules/auth/services/auth.service";
 import { memberDashboardService } from "@/modules/member-portal/services/member-dashboard.service";
 import { memberProfileService } from "@/modules/member-portal/services/member-profile.service";
+import { AdminHeaderControls } from "@/modules/admin-portal/components/admin-header-controls";
 import { SiteLogo } from "./site-logo";
+import { useUnreadNotifications } from "@/modules/member-portal/hooks/use-unread-notifications";
 
 const navigation = [
   { label: "home", href: "/" },
@@ -24,20 +28,30 @@ interface MemberHeaderInfo {
   unreadNotifications: number | null;
 }
 
+interface AdminHeaderInfo {
+  displayName: string;
+  email: string;
+  roleName: string;
+}
+
 export function SiteHeader() {
+  const unreadNotifications = useUnreadNotifications();
   const { t } = useLanguage();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [memberInfo, setMemberInfo] = useState<MemberHeaderInfo | null>(null);
+  const [adminInfo, setAdminInfo] = useState<AdminHeaderInfo | null>(null);
+  const [mentorName, setMentorName] = useState<string | null>(null);
   const [memberPhotoUrl, setMemberPhotoUrl] = useState<string | null>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const isMember = memberInfo !== null;
+  const isAdmin = adminInfo !== null;
 
   useEffect(() => {
     const token = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");
     if (!token) {
-      const timeout = window.setTimeout(() => setMemberInfo(null), 0);
+      const timeout = window.setTimeout(() => { setMemberInfo(null); setAdminInfo(null); setMentorName(null); }, 0);
       return () => window.clearTimeout(timeout);
     }
 
@@ -53,7 +67,23 @@ export function SiteHeader() {
         .then((photo) => setMemberPhotoUrl(photo ? URL.createObjectURL(photo) : null))
         .catch(() => setMemberPhotoUrl(null));
     };
-    refreshMemberInfo();
+    authService.getSession(token).then(({ data }) => {
+      if (controller.signal.aborted) return;
+      setMentorName(data.roleName === "Mentor" ? data.displayName : null);
+      if (data.roleName === "System Administrator" || data.roleName === "Organisation Administrator") {
+        setAdminInfo({ displayName: data.displayName, email: data.email, roleName: data.roleName });
+        setMemberInfo(null);
+        setMemberPhotoUrl(null);
+      } else if (data.roleName === "Member") {
+        setAdminInfo(null);
+        refreshMemberInfo();
+      } else {
+        setAdminInfo(null);
+        setMemberInfo(null);
+      }
+    }).catch(() => {
+      if (!controller.signal.aborted) { setAdminInfo(null); setMemberInfo(null); setMentorName(null); }
+    });
     window.addEventListener("tge:member-profile-updated", refreshMemberInfo);
     return () => {
       controller.abort();
@@ -99,11 +129,11 @@ export function SiteHeader() {
   }
 
   function memberAccountControl(compact = false) {
-    const unreadCount = memberInfo?.unreadNotifications ?? 0;
+    const unreadCount = unreadNotifications;
     const displayName = memberInfo?.displayName || t("memberRole");
 
     return (
-      <div className="flex items-center gap-3">
+      <div className={`flex items-center ${compact ? "gap-0" : "gap-3"}`}>
         <Link
           href="/portal/notifications"
           aria-label={t("memberNotifications")}
@@ -147,13 +177,21 @@ export function SiteHeader() {
     );
   }
 
+  function mentorNotificationBell() {
+    return <Link href="/mentor/notifications" aria-label={t("memberNotifications")} className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-[#111B16] hover:bg-[#F2F6F4]"><Bell aria-hidden="true" size={22}/>{unreadNotifications > 0 && <span className="absolute right-0 top-0 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[#087B49] px-1 text-[10px] font-bold text-white">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}</Link>;
+  }
+
+  function adminAccountControl(compact = false) {
+    return <AdminHeaderControls displayName={adminInfo?.displayName ?? t("adminPortal")} email={adminInfo?.email ?? ""} roleName={adminInfo?.roleName ?? ""} compact={compact} />;
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[#E2E8E5] bg-white shadow-[0_1px_5px_#00000008]">
-      <div className="relative mx-auto flex min-h-[68px] max-w-[1440px] items-center justify-between gap-3 px-4 sm:px-8 lg:h-[72px] lg:px-10">
-        <div className="flex shrink-0 items-center gap-2">
-          {isMember && <button
+      <div className="relative mx-auto flex min-h-[68px] w-full max-w-[1440px] items-center justify-between gap-1 px-2 sm:gap-3 sm:px-8 lg:h-[72px] lg:px-10">
+        <div className="flex min-w-0 shrink items-center gap-0 sm:gap-2">
+          {(isMember || isAdmin || mentorName) && <button
             type="button"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-md text-[#1C1C1A] hover:bg-[#F2F6F4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A] lg:hidden"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-[#1C1C1A] hover:bg-[#F2F6F4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A] lg:hidden"
             aria-label={t(mobileMenuOpen ? "closeMenu" : "openMenu")}
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-primary-navigation"
@@ -161,8 +199,8 @@ export function SiteHeader() {
           >
             {mobileMenuOpen ? <X aria-hidden="true" size={24} /> : <Menu aria-hidden="true" size={24} />}
           </button>}
-          <Link href="/" aria-label={t("home")} className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A]">
-            <SiteLogo priority />
+          <Link href="/" aria-label={t("home")} className="w-[98px] shrink-0 rounded min-[360px]:w-[110px] sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A]">
+            <span className="block origin-left scale-[0.7] min-[360px]:scale-[0.8] sm:scale-100"><SiteLogo priority /></span>
           </Link>
         </div>
 
@@ -175,7 +213,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden shrink-0 items-center gap-3 lg:flex">
-          {isMember ? memberAccountControl() : (
+          {isMember ? memberAccountControl() : isAdmin ? adminAccountControl() : mentorName ? <>{mentorNotificationBell()}<Link href="/mentor/profile" className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-green-800"><UserRound size={20}/>{mentorName}</Link></> : (
             <Link href="/login" className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#006B3B] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#075C32] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A] focus-visible:ring-offset-2">
               <UserRound aria-hidden="true" size={16} />
               {t("login")}
@@ -183,8 +221,13 @@ export function SiteHeader() {
           )}
         </div>
 
+        <div className="ml-auto shrink-0 lg:hidden"><LanguageSwitcher compact /></div>
         {isMember ? (
           <div className="flex shrink-0 items-center lg:hidden">{memberAccountControl(true)}</div>
+        ) : isAdmin ? (
+          <div className="flex shrink-0 items-center lg:hidden">{adminAccountControl(true)}</div>
+        ) : mentorName ? (
+          <div className="flex items-center lg:hidden">{mentorNotificationBell()}<Link href="/mentor/profile" aria-label="Mentor profile" className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-green-50 text-green-800"><UserRound size={20}/></Link></div>
         ) : (
           <button
             type="button"
@@ -207,7 +250,7 @@ export function SiteHeader() {
             </Link>
           ))}
         </nav>
-        {!isMember && <div className="mx-auto mt-4 flex max-w-7xl items-center justify-end px-2">
+        {!isMember && !isAdmin && !mentorName && <div className="mx-auto mt-4 flex max-w-7xl items-center justify-end px-2">
           <Link href="/login" className="inline-flex h-10 items-center justify-center rounded-md bg-[#006B3B] px-5 text-sm font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A] focus-visible:ring-offset-2" onClick={() => setMobileMenuOpen(false)}>{t("login")}</Link>
         </div>}
       </div>

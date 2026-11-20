@@ -1,0 +1,18 @@
+import { MentorPortalUseCase } from "./application/use-cases/mentor-portal.usecase.js";
+import { PrismaMentorPortalRepository } from "./infrastructure/repositories/prisma-mentor-portal.repository.js";
+import { createMentorPortalRouter } from "./presentation/controllers/mentor-portal.controller.js";
+import { LocalMemberResourceFileStorage } from "../member-portal/infrastructure/local-member-resource-file.storage.js";
+import { LocalAdminResourceFileStorage } from "../admin-portal/infrastructure/local-admin-resource-file.storage.js";
+import { UploadMentorResourceUseCase } from "./application/use-cases/upload-mentor-resource.usecase.js";
+import { PrismaMentorResourcesRepository } from "./infrastructure/repositories/prisma-mentor-resources.repository.js";
+import { createMentorResourcesRouter } from "./presentation/controllers/mentor-resources.controller.js";
+import { GetMentorEventsUseCase } from "./application/use-cases/get-mentor-events.usecase.js";
+import { PrismaMentorEventsRepository } from "./infrastructure/repositories/prisma-mentor-events.repository.js";
+import { createMentorEventsRouter } from "./presentation/controllers/mentor-events.controller.js";
+import { createMentorMentorshipRouter } from "./presentation/controllers/mentor-mentorship.controller.js";
+import { ManageAdminMentorshipUseCase } from "../admin-portal/application/manage-admin-mentorship.usecase.js";
+import { PrismaAdminMentorshipRepository } from "../admin-portal/infrastructure/prisma-admin-mentorship.repository.js";
+export const mentorPortalRouter = createMentorPortalRouter(new MentorPortalUseCase(new PrismaMentorPortalRepository(), new LocalMemberResourceFileStorage()));
+export const mentorResourcesRouter = createMentorResourcesRouter(new UploadMentorResourceUseCase(new PrismaMentorResourcesRepository(), new LocalAdminResourceFileStorage()));
+export const mentorEventsRouter = createMentorEventsRouter(new GetMentorEventsUseCase(new PrismaMentorEventsRepository()));
+export const mentorMentorshipRouter = createMentorMentorshipRouter(new ManageAdminMentorshipUseCase(new PrismaAdminMentorshipRepository()));

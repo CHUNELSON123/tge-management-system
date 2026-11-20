@@ -104,7 +104,7 @@ export default function EventDetailPage({ eventId }: { eventId: string }) {
             <h2 className="text-lg font-bold">{t("eventDetailsHeading")}</h2>
             <div className="mt-4"><EventTime event={event} /></div>
             {event.venue && <div className="mt-4 flex items-start gap-3 border-t border-[#E8EEEA] pt-4"><MapPin aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-[#087B49]" /><div><p className="text-xs font-semibold uppercase text-[#65716A]">{t("eventVenueLabel")}</p><p className="mt-1 text-sm font-semibold">{event.venue}</p></div></div>}
-            {isUpcoming && <Link href={`/events/${encodeURIComponent(event.id)}/register`} className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-[#006B3B] px-4 text-sm font-semibold text-white hover:bg-[#075C32] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A] focus-visible:ring-offset-2">{t("registerForEvent")}</Link>}
+            {Date.parse(event.startAt) > Date.now() && (event.registrationRequired ?? true) && <Link href={`/events/${encodeURIComponent(event.id)}/register`} className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-[#006B3B] px-4 text-sm font-semibold text-white hover:bg-[#075C32] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A] focus-visible:ring-offset-2">{t("registerForEvent")}</Link>}
           </section>
 
           {event.relatedEvents.length > 0 && <section className="rounded-xl border border-[#E6ECE8] p-5">

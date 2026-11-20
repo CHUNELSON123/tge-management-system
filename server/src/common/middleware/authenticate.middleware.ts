@@ -28,7 +28,13 @@ export async function authenticate(
     }
 
     const token = authorization.slice(7);
-    const payload = jwtService.verifyAccessToken(token);
+    let payload;
+    try {
+      payload = jwtService.verifyAccessToken(token);
+    } catch {
+      res.status(401).json({ message: "Invalid or expired access token." });
+      return;
+    }
 
     const revoked = await prisma.revokedAccessToken.findUnique({
       where: { tokenId: payload.jti },
@@ -63,7 +69,7 @@ export async function authenticate(
     };
 
     next();
-  } catch {
-    res.status(401).json({ message: "Invalid or expired access token." });
+  } catch (error) {
+    next(error);
   }
 }

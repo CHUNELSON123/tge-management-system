@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getMemberConversation, listMemberConversations, sendMemberMessage } from "../services/member-messages.service";
+import { getMemberConversation, listMemberConversations, markConversationRead, sendMemberMessage } from "../services/member-messages.service";
 import type { MemberConversationDetail, MemberConversationSummary } from "../types/member-messages.types";
 function expired(error: unknown) { return typeof error === "object" && error !== null && "status" in error && error.status === 401; }
 function clearToken() { localStorage.removeItem("tge.accessToken"); sessionStorage.removeItem("tge.accessToken"); }
@@ -28,13 +28,17 @@ export function useMemberMessages(autoSelect = true) {
     return () => window.clearInterval(interval);
   }, []);
   useEffect(() => {
+    const refresh = () => { setVersion((value) => value + 1); setDetailVersion((value) => value + 1); };
+    window.addEventListener("tge:notifications-arrived", refresh);
+    return () => window.removeEventListener("tge:notifications-arrived", refresh);
+  }, []);
+  useEffect(() => {
     if (!selectedId) return;
     let active = true;
     getMemberConversation(selectedId).then((conversation) => {
       if (!active) return;
       setDetail(conversation);
       setFailedConversationId(null);
-      setConversations((items) => items.map((item) => item.id === selectedId ? { ...item, unreadCount: 0 } : item));
     }).catch((error: unknown) => {
       if (!active) return;
       if (expired(error)) { clearToken(); router.replace("/login"); } else { setDetail(null); setFailedConversationId(selectedId); }
@@ -59,10 +63,18 @@ export function useMemberMessages(autoSelect = true) {
       return false;
     }
   }, [selectedId, router]);
+  const markVisibleRead = useCallback(async (conversationId: string, messageId: string) => {
+    try {
+      await markConversationRead(conversationId, messageId);
+      const items = await listMemberConversations();
+      setConversations(items);
+      window.dispatchEvent(new Event("tge:messages-updated"));
+    } catch { /* Keep the unread count when a receipt cannot be saved. */ }
+  }, []);
   const selectedDetail = selectedId && detail?.conversationId === selectedId ? detail : null;
   const detailLoading = !!selectedId && !selectedDetail && failedConversationId !== selectedId;
   const detailFailed = !!selectedId && failedConversationId === selectedId;
-  return { conversations, selectedId, setSelectedId, detail: selectedDetail, loading, detailLoading, detailFailed, failed, sendFailed, send,
+  return { conversations, selectedId, setSelectedId, detail: selectedDetail, loading, detailLoading, detailFailed, failed, sendFailed, send, markVisibleRead,
     retry: () => { setFailed(false); setLoading(true); setVersion((value) => value + 1); },
     retryDetail: () => { setFailedConversationId(null); setDetailVersion((value) => value + 1); },
   };

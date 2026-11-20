@@ -62,3 +62,17 @@ test("account creation rejects duplicate email and forbidden role assignment", a
   );
   assert.equal(createCalls, 0);
 });
+
+test("account creation reports an invitation failure without reporting that creation failed", async () => {
+  const previous = process.env.ACTIVATION_URL;
+  process.env.ACTIVATION_URL = "https://tge.example.org/activate-account";
+  const user = { id: "created-user", email: "member@example.org", firstName: "Member", status: "PENDING_ACTIVATION" };
+  const repository = { findByEmail: async () => null, findRoleNameById: async () => "Member", create: async () => user };
+  const activation = { execute: async () => ({ token: "token", expiresAt: new Date() }) };
+  const email = { sendEmail: async () => { throw new Error("mail unavailable"); } };
+  try {
+    const result = await new CreateAccountUseCase(repository as never, activation as never, email as never).execute({ email: user.email, firstName: user.firstName, lastName: "User", roleId: "member" }, { roleName: "Organisation Administrator" });
+    assert.equal(result.user.id, user.id);
+    assert.equal(result.invitationSent, false);
+  } finally { if (previous === undefined) delete process.env.ACTIVATION_URL; else process.env.ACTIVATION_URL = previous; }
+});

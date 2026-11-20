@@ -1,5 +1,5 @@
 import type { MemberResource } from "../types/member-resources.types";
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 export async function getMemberResources(token: string, signal?: AbortSignal): Promise<MemberResource[]> {
   const response = await fetch(`${API_URL}/api/member/resources`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store", signal });
   const body = await response.json().catch(() => null) as { message?: string; data?: MemberResource[] } | null;

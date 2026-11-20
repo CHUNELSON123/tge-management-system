@@ -21,7 +21,9 @@ export class PrismaMembershipApplicationRepository
         where: { applicantEmail: { equals: applicantEmail, mode: "insensitive" } },
         orderBy: { createdAt: "desc" },
       });
-      if (existing) return existing;
+      // A rejected applicant may apply again, while pending and approved
+      // applications remain idempotent.
+      if (existing && existing.status !== "REJECTED") return existing;
       return tx.membershipApplication.create({
         data: { ...application, applicantEmail },
       });

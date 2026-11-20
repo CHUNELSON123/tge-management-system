@@ -1,0 +1,8 @@
+"use client";
+import {useEffect,useState} from "react";
+import {useRouter} from "next/navigation";
+import {AdminProgrammesRequestError,adminProgrammesService} from "../services/admin-programmes.service";
+import type {CohortDetail} from "../types/admin-programmes.types";
+import {adminAccessService} from "../services/admin-access.service";
+import type {AdminAccess} from "../types/admin-access.types";
+export function useAdminCohort(id:string){const router=useRouter();const[data,setData]=useState<CohortDetail|null>(null);const[loading,setLoading]=useState(true);const[failed,setFailed]=useState(false);const[version,setVersion]=useState(0);const[access,setAccess]=useState<AdminAccess|null>(null);useEffect(()=>{const token=localStorage.getItem("tge.accessToken")??sessionStorage.getItem("tge.accessToken");if(!token){router.replace("/admin/login");return;}const c=new AbortController();adminAccessService.getAccess(token,c.signal).then(v=>{if(!c.signal.aborted)setAccess(v);}).catch((e:unknown)=>{if(e instanceof AdminProgrammesRequestError&&e.status===401)router.replace("/admin/login");});adminProgrammesService.getCohort(token,id,c.signal).then(v=>{if(!c.signal.aborted)setData(v);}).catch((e:unknown)=>{if(c.signal.aborted)return;setFailed(true);if(e instanceof AdminProgrammesRequestError&&e.status===401)router.replace("/admin/login");else if(e instanceof AdminProgrammesRequestError&&e.status===403)router.replace("/portal");}).finally(()=>{if(!c.signal.aborted)setLoading(false);});return()=>c.abort();},[id,router,version]);return{data,loading,failed,canAssign:access?.permissions.includes("members.manage")??false,retry:()=>setVersion(v=>v+1)};}
