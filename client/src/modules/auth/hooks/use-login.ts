@@ -1,14 +1,21 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { authService } from "../services/auth.service";
+import { useEffect, useLayoutEffect, useState } from "react";
+import { authService, AuthRequestError } from "../services/auth.service";
 
 export function useLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loginSuccessful, setLoginSuccessful] = useState(false);
   const [restoringSession, setRestoringSession] = useState(true);
+
+  // Next.js Activity preserves page state while hiding it. A previous success
+  // must not redirect again when logout brings the login page back into view.
+  useLayoutEffect(() => () => {
+    setLoginSuccessful(false);
+    setRestoringSession(true);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -22,9 +29,14 @@ export function useLogin() {
 
     authService.getSession(accessToken)
       .then(() => { if (!cancelled) setLoginSuccessful(true); })
-      .catch(() => {
-        localStorage.removeItem("tge.accessToken");
-        sessionStorage.removeItem("tge.accessToken");
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        if (error instanceof AuthRequestError && error.status === 401) {
+          localStorage.removeItem("tge.accessToken");
+          sessionStorage.removeItem("tge.accessToken");
+        } else {
+          setError(error instanceof Error ? error.message : "Unable to verify your session.");
+        }
         if (!cancelled) setLoginSuccessful(false);
       })
       .finally(() => { if (!cancelled) setRestoringSession(false); });
@@ -39,6 +51,9 @@ export function useLogin() {
 
     try {
       const result = await authService.login({ email, password });
+      // Confirm the protected API accepts the token before reporting success
+      // or navigating; otherwise login and the portal can redirect in a loop.
+      await authService.getSession(result.data.accessToken);
       if (remember) {
         localStorage.setItem("tge.accessToken", result.data.accessToken);
         sessionStorage.removeItem("tge.accessToken");

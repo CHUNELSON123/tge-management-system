@@ -24,6 +24,7 @@ export function useAdminMember(memberId: string) {
     const token = getToken();
     if (!token) { router.replace("/admin/login"); return; }
     const controller = new AbortController();
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset UI state when the active request or session changes.
     setLoading(true); setFailed(false);
     adminMembersService.get(token, memberId, controller.signal).then((result) => {
       if (!controller.signal.aborted) setMember(result);
@@ -62,6 +63,7 @@ export function useAdminMemberProgrammes(memberId: string) {
     const token = getToken();
     if (!token) { router.replace("/admin/login"); return; }
     const controller = new AbortController();
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset UI state when the active request or session changes.
     setLoading(true); setFailed(false);
     adminMembersService.programmes(token, memberId, controller.signal).then((result) => { if (!controller.signal.aborted) setProgrammes(result); }).catch((error: unknown) => {
       if (controller.signal.aborted) return;

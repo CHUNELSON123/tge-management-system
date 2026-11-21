@@ -20,6 +20,7 @@ export function useAdminMemberApplications() {
   useEffect(() => {
     const token = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");
     if (!token) { router.replace("/admin/login"); return; }
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset UI state when the active request or session changes.
     const controller = new AbortController(); setLoading(true); setFailed(false);
     adminMembersService.applications(token, { search, page, pageSize: 10 }, controller.signal).then((result) => { if (!controller.signal.aborted) setData(result); }).catch((error: unknown) => {
       if (controller.signal.aborted) return;

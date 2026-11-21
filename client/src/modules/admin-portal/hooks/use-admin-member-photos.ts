@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { adminMembersService } from "../services/admin-members.service";
 
 export function useAdminMemberPhotos(memberIds: string[]) {
-  const ids = useMemo(() => memberIds, [memberIds.join("|")]);
+  const idsKey = JSON.stringify(memberIds);
   const [photos, setPhotos] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    const ids = JSON.parse(idsKey) as string[];
     const token = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Clear stale object URLs as the requested members change.
     if (!token || ids.length === 0) { setPhotos({}); return; }
     const controller = new AbortController();
     const objectUrls: string[] = [];
@@ -28,7 +30,7 @@ export function useAdminMemberPhotos(memberIds: string[]) {
       controller.abort();
       objectUrls.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [ids]);
+  }, [idsKey]);
 
   return photos;
 }

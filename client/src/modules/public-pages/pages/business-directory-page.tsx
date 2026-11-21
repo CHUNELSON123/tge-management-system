@@ -22,11 +22,17 @@ export default function BusinessDirectoryPage() {
   const [categoriesFailed, setCategoriesFailed] = useState(false);
 
   const load = useCallback((signal?: AbortSignal) => {
-    setLoading(true); setFailed(false);
     publicBusinessesService.getBusinesses({ q: search, categoryId: categoryId || undefined, page }, signal)
-      .then(setBusinesses).catch(() => { if (!signal?.aborted) setFailed(true); })
+      .then((result) => { if (!signal?.aborted) setBusinesses(result); }).catch(() => { if (!signal?.aborted) setFailed(true); })
       .finally(() => { if (!signal?.aborted) setLoading(false); });
   }, [search, categoryId, page]);
+
+  const [previousLoad, setPreviousLoad] = useState(() => load);
+  if (previousLoad !== load) {
+    setPreviousLoad(() => load);
+    setLoading(true);
+    setFailed(false);
+  }
 
   useEffect(() => {
     const controller = new AbortController();

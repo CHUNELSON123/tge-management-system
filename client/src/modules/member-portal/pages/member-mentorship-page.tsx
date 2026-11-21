@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CalendarDays, Clock3, FileText, GraduationCap, MessageSquare, UsersRound, Video } from "lucide-react";
 import { useLanguage } from "@/modules/i18n/language-provider";
+import { useCurrentTime } from "@/hooks/use-current-time";
 import { useMemberMentorship } from "../hooks/use-member-mentorship";
 import { useMemberResources } from "../hooks/use-member-resources";
 import { MentorshipDeliveryPanel } from "@/modules/mentorship-delivery/components/mentorship-delivery-panel";
@@ -14,7 +15,7 @@ export function MemberMentorshipPage() {
   const { data: allResources } = useMemberResources();
   const [selectedAssignment, setSelectedAssignment] = useState("");
   const isFrench = locale === "fr";
-  const now = Date.now();
+  const now = useCurrentTime() ?? 0;
   const sessions = data?.assignments.flatMap((assignment) => assignment.sessions.map((session) => ({ ...session, assignmentId: assignment.id, assignmentStatus: assignment.status, mentorName: assignment.mentorName, expertise: assignment.expertise }))) ?? [];
   const upcomingSessions = sessions.filter((session) => session.assignmentStatus.toLowerCase() === "active" && session.status.toLowerCase() === "scheduled" && new Date(session.scheduledStart).getTime() >= now).sort((a, b) => a.scheduledStart.localeCompare(b.scheduledStart));
   const nextSession = upcomingSessions[0] ?? null;

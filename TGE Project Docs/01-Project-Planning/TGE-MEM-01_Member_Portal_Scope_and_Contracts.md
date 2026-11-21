@@ -1,8 +1,8 @@
 # TGE-MEM-01 Member Portal Scope and Contracts
 
-**Task:** TGE-MEM-01 — Confirm Member Portal Scope and Contracts  
-**Status:** Scope inventory drafted; policy and service decisions require product-owner review  
-**Branch:** `feature/TGE-MEM-01-confirm-member-portal-scope-contracts`  
+**Task:** TGE-MEM-01 — Confirm Member Portal Scope and Contracts<br>
+**Status:** Scope inventory drafted; policy and service decisions require product-owner review<br>
+**Branch:** `feature/TGE-MEM-01-confirm-member-portal-scope-contracts`<br>
 **Review date:** 2026-11-08
 
 ## Purpose and outcome

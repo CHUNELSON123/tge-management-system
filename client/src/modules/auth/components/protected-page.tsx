@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authService, AuthRequestError } from "../services/auth.service";
 import type { AuthenticatedSessionResponse } from "../types/auth.types";
@@ -19,6 +19,8 @@ export function ProtectedPage({ children, loginHref = "/login" }: { children: Re
   const { t } = useLanguage();
   const router = useRouter();
   const [session, setSession] = useState<ProtectedSession | null>(null);
+  // Revalidate cached portal pages when Next.js Activity restores them.
+  useLayoutEffect(() => () => { setSession(null); }, []);
   const [unavailable, setUnavailable] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {

@@ -6,6 +6,6 @@ import { AdminRouteGuard } from "./admin-route-guard";
 
 export function AdminLayoutGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  if (pathname === "/admin/login") return children;
+  if (pathname === "/admin/login" || pathname === "/admin/setup") return children;
   return <ProtectedPage loginHref="/admin/login"><AdminRouteGuard>{children}</AdminRouteGuard></ProtectedPage>;
 }

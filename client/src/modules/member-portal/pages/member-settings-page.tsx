@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { AlertTriangle, Bell, Camera, CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, Monitor, Phone, Save, Settings2, ShieldCheck, UserRound } from "lucide-react";
+import Image from "next/image";
+import { AlertTriangle, Bell, Camera, CheckCircle2, Eye, EyeOff, LockKeyhole, Monitor, Phone, Save, Settings2, ShieldCheck, UserRound } from "lucide-react";
 import { useLanguage } from "@/modules/i18n/language-provider";
 import { useMemberSettings } from "../hooks/use-member-settings";
 import type { MemberSettingsTab } from "../types/member-settings.types";
@@ -49,7 +50,7 @@ export function MemberSettingsPage() {
             <section className="rounded-xl border border-[#E6ECE8] bg-white p-4 sm:p-5" aria-labelledby="settings-profile-heading">
               <div className="flex items-start gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#EAF3ED] text-[#087340]"><UserRound aria-hidden="true" size={20} /></span><div><h2 id="settings-profile-heading" className="font-bold text-[#17211B]">{t("settingsProfileInformation")}</h2><p className="mt-1 text-sm text-[#59645D]">{t("settingsProfileDescription")}</p></div></div>
               <div className="mt-4 flex items-center gap-3">
-                <div className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full bg-[#EAF3ED] text-xl font-bold text-[#075C32]">{settings.profilePhotoUrl ? <img src={settings.profilePhotoUrl} alt={draft.fullName} className="h-full w-full object-cover" /> : initials}<label title={t("profilePhotoChange")} className="absolute bottom-0 right-0 grid h-7 w-7 cursor-pointer place-items-center rounded-full border-2 border-white bg-[#F2F6F4] text-[#075C32]"><input type="file" accept="image/jpeg,image/png" aria-label={t("profilePhotoChange")} disabled={settings.photoSaving} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void settings.uploadPhoto(file); }} className="sr-only" />{settings.photoSaving ? <span className="text-[10px]" aria-hidden="true">…</span> : <Camera aria-hidden="true" size={14} />}</label></div>
+                <div className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full bg-[#EAF3ED] text-xl font-bold text-[#075C32]">{settings.profilePhotoUrl ? <Image unoptimized src={settings.profilePhotoUrl} alt={draft.fullName} width={64} height={64} className="h-full w-full object-cover" /> : initials}<label title={t("profilePhotoChange")} className="absolute bottom-0 right-0 grid h-7 w-7 cursor-pointer place-items-center rounded-full border-2 border-white bg-[#F2F6F4] text-[#075C32]"><input type="file" accept="image/jpeg,image/png" aria-label={t("profilePhotoChange")} disabled={settings.photoSaving} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void settings.uploadPhoto(file); }} className="sr-only" />{settings.photoSaving ? <span className="text-[10px]" aria-hidden="true">…</span> : <Camera aria-hidden="true" size={14} />}</label></div>
                 <div><p className="text-sm font-semibold text-[#075C32]">{t("profilePhotoChange")}</p><p className="text-xs text-[#68736C]">{t("settingsPhotoFormats")}</p></div>
               </div>
               <Feedback value={settings.photoFeedback} />

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useCurrentTime } from "@/hooks/use-current-time";
 import { Clock3, Mail, MapPin, Phone } from "lucide-react";
 import { useLanguage } from "@/modules/i18n/language-provider";
 import type { TranslationKey } from "@/modules/i18n/messages";
@@ -67,9 +68,7 @@ function FooterLinkList({
 export function SiteFooter() {
   const { t } = useLanguage();
   const settings = useWebsiteSettings();
-  const [year, setYear] = useState("");
   const [organisation, setOrganisation] = useState<{ name: string; email: string; phone: string; address: string } | null>(null);
-  useEffect(() => { const frame = requestAnimationFrame(() => setYear(String(new Date().getFullYear()))); return () => cancelAnimationFrame(frame); }, []);
   useEffect(() => {
     const controller = new AbortController();
     fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/api/public/organisation`, { signal: controller.signal })
@@ -78,6 +77,8 @@ export function SiteFooter() {
       .catch(() => {});
     return () => controller.abort();
   }, []);
+  const now = useCurrentTime();
+  const year = now === null ? "" : String(new Date(now).getFullYear());
   return (
     <footer className="bg-[#07100F] text-white">
       <div className="mx-auto max-w-[1440px] px-5 py-9 sm:px-8 lg:px-10 lg:py-10">

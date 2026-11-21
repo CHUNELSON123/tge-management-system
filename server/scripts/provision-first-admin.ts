@@ -11,7 +11,7 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 
 dotenv.config({
   path: resolve(currentDirectory, "../.env"),
-  override: true,
+  quiet: true,
 });
 
 const { prisma } = await import("database");

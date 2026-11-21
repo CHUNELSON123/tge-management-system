@@ -18,6 +18,7 @@ export function useAdminMemberPhoto(memberId: string) {
     if (!token) { router.replace("/admin/login"); return; }
     const controller = new AbortController();
     let createdUrl: string | null = null;
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset UI state when the active request or session changes.
     setLoading(true);
     adminMembersService.getPhoto(token, memberId, controller.signal).then((blob) => {
       if (!controller.signal.aborted) {

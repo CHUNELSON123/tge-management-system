@@ -42,6 +42,7 @@ export function useAdminMembers() {
     const token = accessToken();
     if (!token) { router.replace("/admin/login"); return; }
     const controller = new AbortController();
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset UI state when the active request or session changes.
     setLoading(true); setFailed(false);
     adminMembersService.list(token, JSON.parse(query) as Record<string, string | number>, controller.signal).then((result) => {
       if (!controller.signal.aborted) setData(result);

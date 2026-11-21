@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import express from "express";
+import { createApiRateLimiter } from "../../common/middleware/api-rate-limit.middleware.js";
 import { createServer } from "node:http";
 import { once } from "node:events";
 import { resolve } from "node:path";
@@ -24,7 +25,9 @@ test("database-backed login, restored session and logout invalidation", async ()
   const userManagement = await prisma.permission.upsert({ where: { code: "users.manage" }, update: {}, create: { code: "users.manage", description: "Manage accounts" } });
   const passwordHash = await bcrypt.hash("auth-test-password", 4);
   const user = await prisma.user.create({ data: { roleId: role.id, email, passwordHash, firstName: "Auth", lastName: "Test", status: "ACTIVE", emailVerifiedAt: new Date() } });
-  const app = express(); app.use(express.json());
+  const app = express();
+  app.use(createApiRateLimiter());
+  app.use(express.json());
   app.get("/admin-check", authenticate, requirePermission("users.manage"), (_req,res)=>res.status(200).json({ ok: true }));
   let emailHtml = "";
   app.use("/api/auth", createAuthRouter(new LoginUseCase(new PrismaUserRepository(), new JwtService()), { sendEmail: async ({ html }: { html: string }) => { emailHtml = html; } } as never));

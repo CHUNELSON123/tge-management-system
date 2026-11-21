@@ -17,6 +17,7 @@ export function useAdminHeader(enabled: boolean) {
     if (!token) return;
     const controller = new AbortController();
     let createdPhotoUrl: string | null = null;
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset UI state when the active request or session changes.
     setLoading(true);
     setFailed(false);
     Promise.all([

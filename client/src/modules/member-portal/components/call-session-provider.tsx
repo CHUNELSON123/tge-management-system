@@ -31,6 +31,7 @@ export function CallSessionProvider({ children }: { children: React.ReactNode })
     return () => window.clearInterval(timer);
   }, [call.activeCall?.callId, call.activeCall?.phase]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset UI state when the active request or session changes.
   useEffect(() => { if (!call.activeCall) { setMinimized(false); setElapsed(0); } }, [call.activeCall]);
 
   useEffect(() => {

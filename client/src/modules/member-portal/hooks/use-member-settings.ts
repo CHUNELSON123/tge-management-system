@@ -50,11 +50,10 @@ export function useMemberSettings() {
   }, [router]);
 
   const load = useCallback((signal: AbortSignal) => {
-    setLoading(true);
-    setProfileFeedback(null);
     const token = accessToken();
     if (!token) { router.replace("/login"); return; }
     memberProfileService.getProfile(token, signal).then((result) => {
+      if (signal.aborted) return;
       setProfile(result);
       setProfileDraft(profileToSettingsDraft(result));
     }).catch((error: unknown) => {
@@ -62,7 +61,14 @@ export function useMemberSettings() {
       if (error instanceof MemberProfileRequestError && error.status === 401) { redirectToLogin(); return; }
       setProfileFeedback({ type: "error", message: t(error instanceof MemberProfileRequestError && error.status === 404 ? "profileMissingError" : "settingsProfileLoadError") });
     }).finally(() => { if (!signal.aborted) setLoading(false); });
-  }, [redirectToLogin, t]);
+  }, [redirectToLogin, router, t]);
+
+  const [previousRequest, setPreviousRequest] = useState({ load, requestVersion });
+  if (previousRequest.load !== load || previousRequest.requestVersion !== requestVersion) {
+    setPreviousRequest({ load, requestVersion });
+    setLoading(true);
+    setProfileFeedback(null);
+  }
 
   useEffect(() => {
     const controller = new AbortController();
