@@ -10,6 +10,7 @@ export function MemberPublicPageShell({ children }: { children: React.ReactNode 
   const [isMember, setIsMember] = useState(false);
 
   useEffect(() => {
+    if (pathname === "/admin" || pathname.startsWith("/admin/")) return;
     let cancelled = false;
     const token = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");
     if (!token) {

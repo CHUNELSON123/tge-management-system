@@ -3,7 +3,7 @@ import type { MemberNotification, MemberNotificationsRepository } from "../domai
 export class PrismaMemberNotificationsRepository implements MemberNotificationsRepository {
   constructor(private readonly database = prisma) {}
   async listForUser(userId: string): Promise<MemberNotification[]> {
-    const records = await this.database.notification.findMany({ where: { userId }, orderBy: [{ createdAt: "desc" }, { id: "asc" }], select: { id: true, title: true, body: true, notificationType: true, readAt: true, createdAt: true } });
+    const records = await this.database.notification.findMany({ where: { userId }, orderBy: [{ createdAt: "desc" }, { id: "asc" }], select: { id: true, title: true, body: true, notificationType: true, readAt: true, createdAt: true, conversationId: true } });
     return records.map((record) => ({ ...record, readAt: record.readAt?.toISOString() ?? null, createdAt: record.createdAt.toISOString() }));
   }
   async markReadForUser(userId: string, notificationId: string, now: Date): Promise<boolean> {

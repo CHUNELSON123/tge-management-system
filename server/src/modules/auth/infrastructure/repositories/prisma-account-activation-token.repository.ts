@@ -54,14 +54,22 @@ export class PrismaAccountActivationTokenRepository
         throw new Error("ACTIVATION_TOKEN_INVALID");
       }
 
-      await transaction.user.update({
-        where: { id: userId },
+      const updated = await transaction.user.updateMany({
+        where: { id: userId, status: "PENDING_ACTIVATION", deletedAt: null },
         data: {
           passwordHash,
           status: "ACTIVE",
           emailVerifiedAt: new Date(),
         },
       });
+      if (updated.count !== 1) throw new Error("ACTIVATION_TOKEN_INVALID");
+
+      const user = await transaction.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { role: { select: { name: true } } },
+      });
+      if (user.role.name === "Member") await transaction.member.upsert({ where: { userId }, create: { userId, membershipStatus: "active", joinedAt: new Date() }, update: {} });
+      if (user.role.name === "Mentor") await transaction.mentor.upsert({ where: { userId }, create: { userId, status: "active" }, update: {} });
     });
   }
 }

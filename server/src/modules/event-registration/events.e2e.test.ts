@@ -1,0 +1,107 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { createServer } from "node:http";
+import { once } from "node:events";
+import { resolve } from "node:path";
+import bcrypt from "bcrypt";
+import dotenv from "dotenv";
+import express from "express";
+import { prisma } from "database";
+import { JwtService } from "../../common/services/jwt.service.js";
+import { LoginUseCase } from "../auth/application/use-cases/login.usecase.js";
+import { PrismaUserRepository } from "../auth/infrastructure/repositories/prisma-user.repository.js";
+import { createAuthRouter } from "../auth/presentation/controllers/auth.controller.js";
+import { ManageAdminEventsUseCase } from "../admin-portal/application/manage-admin-events.usecase.js";
+import { PrismaAdminEventsRepository } from "../admin-portal/infrastructure/prisma-admin-events.repository.js";
+import { createAdminEventsRouter } from "../admin-portal/presentation/controllers/admin-events.controller.js";
+import { GetAdminAccessUseCase } from "../admin-portal/application/get-admin-access.usecase.js";
+import { PrismaAdminAccessRepository } from "../admin-portal/infrastructure/prisma-admin-access.repository.js";
+import { createAdminPortalRouter } from "../admin-portal/presentation/controllers/admin-portal.controller.js";
+import { GetMemberEventsUseCase } from "../member-portal/application/get-member-events.usecase.js";
+import { PrismaMemberEventsRepository } from "../member-portal/infrastructure/prisma-member-events.repository.js";
+import { createMemberPortalRouter } from "../member-portal/presentation/member-portal.controller.js";
+import { GetPublicEventsUseCase } from "../public-pages/application/get-public-events.usecase.js";
+import { GetPublicEventDetailsUseCase } from "../public-pages/application/get-public-event-details.usecase.js";
+import { PrismaPublicEventsRepository } from "../public-pages/infrastructure/prisma-public-events.repository.js";
+import { createPublicPagesRouter } from "../public-pages/presentation/public-pages.controller.js";
+import { memberEventRegistrationRouter } from "./event-registration.module.js";
+
+test("admin event publication, public and member registration, attendance and payment access", async () => {
+  dotenv.config({ path: resolve(process.cwd(), ".env") });
+  const suffix = randomUUID(), users: string[] = [], eventIds: string[] = [];
+  const adminRole = await prisma.role.findFirstOrThrow({ where: { name: "Organisation Administrator" } });
+  const memberRole = await prisma.role.findFirstOrThrow({ where: { name: "Member" } });
+  const passwordHash = await bcrypt.hash("test-password", 4);
+  const app = express(); app.use(express.json());
+  app.use("/auth", createAuthRouter(new LoginUseCase(new PrismaUserRepository(), new JwtService()), { sendEmail: async () => {} } as never));
+  app.use("/admin", createAdminPortalRouter(new GetAdminAccessUseCase(new PrismaAdminAccessRepository())));
+  app.use("/admin", createAdminEventsRouter(new ManageAdminEventsUseCase(new PrismaAdminEventsRepository())));
+  app.use("/member", createMemberPortalRouter(null as never, null as never, null as never, null as never, new GetMemberEventsUseCase(new PrismaMemberEventsRepository()), null as never, null as never, null as never));
+  app.use("/member", memberEventRegistrationRouter);
+  const publicRepo = new PrismaPublicEventsRepository();
+  app.use("/public", createPublicPagesRouter(null as never, null as never, new GetPublicEventsUseCase(publicRepo), new GetPublicEventDetailsUseCase(publicRepo)));
+  const server = createServer(app); server.listen(0); await once(server, "listening");
+  const addr = server.address(); if (!addr || typeof addr === "string") throw new Error("Test server did not bind");
+  const base = `http://127.0.0.1:${addr.port}`;
+  const request = (method: string, path: string, token?: string, body?: object) => fetch(base + path, { method, headers: { ...(body ? { "Content-Type": "application/json" } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
+  const data = async <T>(response: Response, status: number) => { assert.equal(response.status, status, await response.clone().text()); return ((await response.json()) as { data: T }).data; };
+  try {
+    for (let i = 0; i < 3; i++) { const user = await prisma.user.create({ data: { roleId: i === 0 ? adminRole.id : memberRole.id, email: `event-test-${i}-${suffix}@example.test`, firstName: "Event", lastName: `Test${i}`, passwordHash, status: "ACTIVE" } }); users.push(user.id); if (i > 0) await prisma.member.create({ data: { userId: user.id, membershipStatus: "active" } }); }
+    const tokens: string[] = [];
+    for (let i = 0; i < 3; i++) tokens.push((await data<{ accessToken: string }>(await request("POST", "/auth/login", undefined, { email: `event-test-${i}-${suffix}@example.test`, password: "test-password" }), 200)).accessToken);
+    const access = await data<{ permissions: string[] }>(await request("GET", "/admin/access", tokens[0]), 200); assert.ok(access.permissions.includes("payments.manage"));
+    const start = new Date(Date.now() + 86400000 * 10).toISOString(), end = new Date(Date.now() + 86400000 * 10 + 3600000).toISOString();
+    const eventInput = { title: `Pitch Competition ${suffix}`, shortDescription: "Pitch projects", description: "A public competition event.", eventType: "Pitch Competition", eventMode: "in_person", startAt: start, endAt: end, timezone: "UTC", venue: "Test venue", meetingUrl: null, registrationDeadline: "", capacity: 2, registrationRequired: true };
+    const event = await data<{ id: string; status: string }>(await request("POST", "/admin/events", tokens[0], eventInput), 201); eventIds.push(event.id); assert.equal(event.status, "draft");
+    assert.equal((await request("GET", `/public/events/${event.id}`)).status, 404);
+    assert.equal((await request("GET", `/member/events/${event.id}`, tokens[1])).status, 404);
+    await data(await request("POST", `/admin/events/${event.id}/status`, tokens[0], { status: "published" }), 200);
+    await data(await request("GET", `/public/events/${event.id}`), 200);
+    const visible = await data<Array<{ id: string; registrationStatus: string | null }>>(await request("GET", "/member/events", tokens[1]), 200); assert.equal(visible.find(item => item.id === event.id)?.registrationStatus, null);
+    assert.equal((await request("POST", `/member/events/${event.id}/registrations`, tokens[1], { consent: false })).status, 400);
+    await data(await request("POST", `/member/events/${event.id}/registrations`, tokens[1], { consent: true }), 201);
+    assert.equal((await request("POST", `/member/events/${event.id}/registrations`, tokens[1], { consent: true })).status, 409);
+    const linked = await data<{ registrationStatus: string }>(await request("GET", `/member/events/${event.id}`, tokens[1]), 200); assert.equal(linked.registrationStatus, "registered");
+    assert.equal((await request("POST", `/public/events/${event.id}/registrations`, undefined, { name: "Same Member", email: `event-test-1-${suffix}@example.test`, phone: "12345678", consent: true })).status, 409);
+    const guest = { name: "Visitor Test", email: `visitor-${suffix}@example.test`, phone: "12345678", consent: true };
+    await data(await request("POST", `/public/events/${event.id}/registrations`, undefined, guest), 201);
+    assert.equal((await request("POST", `/member/events/${event.id}/registrations`, tokens[2], { consent: true })).status, 409);
+    const roster = await data<{ rows: Array<{ id: string; member: boolean; registrationStatus: string; attendanceStatus: string }> }>(await request("GET", `/admin/events/${event.id}/registrations`, tokens[0]), 200);
+    assert.equal(roster.rows.length, 2); assert.equal(roster.rows.filter(item => item.member).length, 1); assert.ok(roster.rows.every(item => item.registrationStatus === "registered" && item.attendanceStatus === "pending"));
+    await data(await request("POST", `/member/events/${event.id}/cancel-registration`, tokens[1], {}), 200);
+    await data(await request("POST", `/member/events/${event.id}/registrations`, tokens[2], { consent: true }), 201);
+    assert.equal((await request("POST", `/member/events/${event.id}/registrations`, tokens[1], { consent: true })).status, 409);
+    const current = await data<{ rows: Array<{ id: string; member: boolean; registrationStatus: string }> }>(await request("GET", `/admin/events/${event.id}/registrations`, tokens[0]), 200);
+    const activeMember = current.rows.find(item => item.member && item.registrationStatus === "registered")!;
+    assert.equal((await request("PATCH", `/admin/event-registrations/${activeMember.id}`, tokens[0], { attendanceStatus: "checked_in" })).status, 409);
+    const pastStart = new Date(Date.now() - 3600000).toISOString(), pastEnd = new Date(Date.now() - 1800000).toISOString();
+    await data(await request("PATCH", `/admin/events/${event.id}`, tokens[0], { ...eventInput, startAt: pastStart, endAt: pastEnd }), 200);
+    await data(await request("PATCH", `/admin/event-registrations/${activeMember.id}`, tokens[0], { attendanceStatus: "checked_in" }), 200);
+    const after = await data<{ rows: Array<{ id: string; attendanceStatus: string }> }>(await request("GET", `/admin/events/${event.id}/registrations`, tokens[0]), 200); assert.equal(after.rows.find(item => item.id === activeMember.id)?.attendanceStatus, "checked_in");
+    const cancelled = current.rows.find(item => item.registrationStatus === "cancelled")!;
+    assert.equal((await request("PATCH", `/admin/event-registrations/${cancelled.id}`, tokens[0], { attendanceStatus: "checked_in" })).status, 409);
+    await data(await request("POST", `/admin/events/${event.id}/status`, tokens[0], { status: "cancelled" }), 200);
+    assert.ok(await prisma.notification.findFirst({ where: { userId: users[2], notificationType: "event", title: "Event cancelled", body: { contains: eventInput.title } } }));
+    assert.equal(await prisma.notification.count({ where: { userId: users[1], notificationType: "event", title: "Event cancelled", body: { contains: eventInput.title } } }), 0);
+    assert.equal((await request("GET", `/public/events/${event.id}`)).status, 404);
+    assert.equal((await request("GET", `/member/events/${event.id}`, tokens[1])).status, 404);
+    const raceEvent = await data<{ id: string }>(await request("POST", "/admin/events", tokens[0], { ...eventInput, title: `Capacity ${suffix}`, capacity: 1 }), 201); eventIds.push(raceEvent.id);
+    await data(await request("POST", `/admin/events/${raceEvent.id}/status`, tokens[0], { status: "published" }), 200);
+    const attempts = await Promise.all([
+      request("POST", `/member/events/${raceEvent.id}/registrations`, tokens[1], { consent: true }),
+      request("POST", `/public/events/${raceEvent.id}/registrations`, undefined, { ...guest, email: `race-${suffix}@example.test` }),
+    ]);
+    assert.deepEqual(attempts.map(item => item.status).sort(), [201, 409]);
+    const closedEvent = await data<{ id: string }>(await request("POST", "/admin/events", tokens[0], { ...eventInput, title: `Closed ${suffix}`, registrationDeadline: new Date(Date.now() - 86400000).toISOString() }), 201); eventIds.push(closedEvent.id);
+    await data(await request("POST", `/admin/events/${closedEvent.id}/status`, tokens[0], { status: "published" }), 200);
+    assert.equal((await request("POST", `/public/events/${closedEvent.id}/registrations`, undefined, { ...guest, email: `closed-${suffix}@example.test` })).status, 409);
+    assert.equal((await request("POST", `/member/events/${closedEvent.id}/registrations`, tokens[1], { consent: true })).status, 409);
+  } finally {
+    server.close();
+    await prisma.event.deleteMany({ where: { id: { in: eventIds } } });
+    await prisma.auditLog.deleteMany({ where: { actorUserId: { in: users } } });
+    await prisma.user.deleteMany({ where: { id: { in: users } } });
+    await prisma.$disconnect();
+  }
+});

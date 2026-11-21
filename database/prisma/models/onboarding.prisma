@@ -10,6 +10,13 @@ model MembershipApplication {
   applicantLastName  String                      @map("applicant_last_name") @db.VarChar(100)
   applicantEmail     String                      @map("applicant_email") @db.VarChar(255)
   applicantPhone     String?                     @map("applicant_phone") @db.VarChar(30)
+  applicantLocation String? @map("applicant_location") @db.VarChar(255)
+  applicantDateOfBirth DateTime? @map("applicant_date_of_birth") @db.Date
+  applicantGender String? @map("applicant_gender") @db.VarChar(50)
+  applicantNationality String? @map("applicant_nationality") @db.VarChar(100)
+  applicantPreferredLanguage String? @map("applicant_preferred_language") @db.VarChar(5)
+  applicantTimezone String? @map("applicant_timezone") @db.VarChar(100)
+  applicantBio String? @map("applicant_bio") @db.VarChar(250)
   status             MembershipApplicationStatus @default(PENDING)
   rejectionReason    String?                     @map("rejection_reason") @db.Text
   reviewedByUserId   String?                     @map("reviewed_by_user_id") @db.Uuid

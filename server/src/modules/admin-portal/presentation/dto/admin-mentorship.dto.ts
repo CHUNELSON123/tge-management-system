@@ -1,0 +1,10 @@
+import { z } from "zod";
+const uuid=z.string().uuid();
+const date=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value=>{const parsed=new Date(`${value}T00:00:00.000Z`);return !Number.isNaN(parsed.valueOf())&&parsed.toISOString().slice(0,10)===value;});
+export const mentorshipListQuerySchema=z.object({search:z.string().trim().max(100).optional(),status:z.string().trim().max(50).optional(),page:z.coerce.number().int().min(1).default(1),pageSize:z.coerce.number().int().min(1).max(50).default(10)}).strict();
+export const mentorshipIdSchema=uuid;
+export const mentorshipAssignmentSchema=z.object({mentorId:uuid,memberId:uuid,programmeId:uuid.nullable(),startDate:date,endDate:date.nullable(),notes:z.string().trim().max(5000).nullable()}).strict().refine(value=>!value.endDate||value.endDate>=value.startDate,{message:"End date must be on or after the start date."});
+export const mentorshipReassignSchema=z.object({mentorId:uuid}).strict();
+export const mentorshipProgressSchema=z.object({note:z.string().trim().min(1).max(10000),value:z.number().finite().nullable()}).strict();
+export const mentorshipSessionSchema=z.object({title:z.string().trim().min(1).max(250),scheduledStart:z.string().datetime({offset:true}),scheduledEnd:z.string().datetime({offset:true}).nullable(),locationOrUrl:z.string().trim().max(1000).nullable(),notes:z.string().trim().max(10000).nullable()}).strict().refine(value=>!value.scheduledEnd||value.scheduledEnd>value.scheduledStart,{message:"Session end must be after its start."});
+export const mentorshipObjectiveSchema=z.object({title:z.string().trim().min(1).max(250),description:z.string().trim().max(10000).nullable(),targetDate:date.nullable()}).strict();

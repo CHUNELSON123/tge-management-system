@@ -53,8 +53,8 @@ export function useMemberEvents(eventId?: string) {
   }, [eventId, router, requestVersion]);
 
   const now = useCurrentTime() ?? 0;
-  const upcoming = useMemo(() => events.filter((event) => Date.parse(event.startAt) >= now), [events, now]);
-  const past = useMemo(() => events.filter((event) => Date.parse(event.startAt) < now), [events, now]);
+  const upcoming = useMemo(() => events.filter((event) => Date.parse(event.endAt ?? event.startAt) >= now), [events, now]);
+  const past = useMemo(() => events.filter((event) => Date.parse(event.endAt ?? event.startAt) < now), [events, now]);
   const categories = useMemo(() => [...new Set(events.map((event) => event.eventType).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [events]);
   const filteredEvents = useMemo(() => {
     const source = tab === "upcoming" ? upcoming : tab === "past" ? past : [];

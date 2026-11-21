@@ -27,7 +27,7 @@ export class MemberProfileRequestError extends Error {
 
 export type MemberProfileUpdate = Partial<Pick<MemberProfile, "firstName" | "lastName" | "phone" | "location" | "dateOfBirth" | "gender" | "nationality" | "preferredLanguage" | "timezone" | "bio">>;
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export const memberProfileService = {
   async getProfile(accessToken: string, signal?: AbortSignal): Promise<MemberProfile> {

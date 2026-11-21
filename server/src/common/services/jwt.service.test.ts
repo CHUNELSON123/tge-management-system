@@ -8,6 +8,8 @@ test("JWT accepts a correctly signed access token and rejects tampered/expired t
   process.env.JWT_SECRET = "unit-test-secret-with-more-than-32-characters";
   const service = new JwtService();
   const valid = service.signAccessToken("user-1");
+  const payload = jwt.decode(valid) as { iat: number; exp: number };
+  assert.equal(payload.exp - payload.iat, 14 * 24 * 60 * 60);
   assert.equal(service.verifyAccessToken(valid).sub, "user-1");
   assert.throws(() => service.verifyAccessToken(`${valid}x`));
   const expired = jwt.sign({ sub: "user-1", jti: randomUUID() }, process.env.JWT_SECRET!, {

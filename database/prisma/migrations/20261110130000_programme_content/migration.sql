@@ -1,0 +1,2 @@
+ALTER TABLE "programmes"
+  ADD COLUMN IF NOT EXISTS "program_content" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

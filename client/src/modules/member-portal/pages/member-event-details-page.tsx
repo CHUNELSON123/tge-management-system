@@ -6,6 +6,7 @@ import { useState } from "react";
 import { CalendarDays, CheckCircle2, Clock3, MapPin, Tag, TicketCheck } from "lucide-react";
 import { useLanguage } from "@/modules/i18n/language-provider";
 import { useMemberEvents } from "../hooks/use-member-events";
+import { memberLearningEventsService } from "../services/member-learning-events.service";
 import type { MemberEventSection } from "../types/member-events.types";
 
 const sections: Array<{ id: MemberEventSection; key: "memberEventOverview" | "memberEventAgenda" | "memberEventSpeakers" | "memberEventLocation" | "memberEventAttendees" | "memberEventResources" }> = [
@@ -28,6 +29,18 @@ export function MemberEventDetailsPage({ eventId }: { eventId: string }) {
   const { locale, t } = useLanguage();
   const eventQuery = useMemberEvents(eventId);
   const [section, setSection] = useState<MemberEventSection>("overview");
+  const [consent, setConsent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [registrationError, setRegistrationError] = useState("");
+  const [registrationMessage, setRegistrationMessage] = useState("");
+  async function changeRegistration(cancel: boolean) {
+    const token = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");
+    if (!token || (!cancel && !consent)) return;
+    setBusy(true); setRegistrationError(""); setRegistrationMessage("");
+    try { await memberLearningEventsService.changeRegistration(token, eventId, cancel); setConsent(false); setRegistrationMessage(locale === "fr" ? (cancel ? "Inscription annulée." : "Inscription confirmée.") : (cancel ? "Registration cancelled." : "Registration confirmed.")); eventQuery.retry(); }
+    catch (error) { setRegistrationError(error instanceof Error ? error.message : (locale === "fr" ? "Impossible de modifier l’inscription." : "Registration could not be updated.")); }
+    finally { setBusy(false); }
+  }
   const event = eventQuery.details;
   if (eventQuery.loading) return <section aria-busy="true"><div className="h-8 w-48 animate-pulse rounded bg-[#F1F5F2]" /><div className="mt-5 h-64 animate-pulse rounded-xl bg-[#F1F5F2]" /></section>;
   if (eventQuery.notFound) return <section role="status" className="rounded-xl border border-[#E6ECE8] p-6 text-center"><h1 className="text-xl font-bold text-[#17211B]">{t("memberEventNotFound")}</h1><Link href="/portal/events" className="mt-4 inline-flex min-h-10 items-center rounded-md bg-[#006B3B] px-4 text-sm font-semibold text-white">{t("memberBackToEvents")}</Link></section>;
@@ -35,8 +48,10 @@ export function MemberEventDetailsPage({ eventId }: { eventId: string }) {
 
   const registrationActive = event.registrationStatus === "registered";
   const unavailableSection = section === "agenda" || section === "speakers";
+  const registrationClosed = event.registrationRequired && !event.registrationOpen && !registrationActive;
   return <section aria-labelledby="member-event-detail-title" aria-busy={eventQuery.loading}>
     <Link href="/portal/events" className="inline-flex min-h-9 items-center gap-2 text-sm font-semibold text-[#087340] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A]"><span aria-hidden="true">←</span>{t("memberBackToEvents")}</Link>
+    {registrationClosed && <p role="status" className="mt-3 rounded bg-amber-50 p-3 text-sm text-amber-900">{locale === "fr" ? "Les inscriptions à cet événement sont fermées." : "Registration for this event is closed."}</p>}
     <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_250px]">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2"><span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${registrationActive ? "bg-[#E4F5EA] text-[#075C32]" : "bg-[#F0F3F1] text-[#4B5650]"}`}><CheckCircle2 aria-hidden="true" size={14} />{registrationActive ? t("memberEventRegistered") : t("memberEventNotRegistered")}</span><span className="rounded-full bg-[#EEF5F0] px-3 py-1 text-xs font-semibold text-[#075C32]">{event.eventType}</span></div>
@@ -62,7 +77,7 @@ export function MemberEventDetailsPage({ eventId }: { eventId: string }) {
       </div>
 
       <aside className="space-y-4">
-        <section className="rounded-xl border border-[#E6ECE8] bg-white p-4" aria-labelledby="member-event-registration-title"><h2 id="member-event-registration-title" className="text-base font-bold text-[#17211B]">{t("memberEventRegistrationDate")}</h2><div className={`mt-3 rounded-lg p-3 ${registrationActive ? "bg-[#F1F7F3]" : "bg-[#F7F8F7]"}`}><p className="flex items-center gap-2 text-sm font-semibold text-[#075C32]"><CheckCircle2 aria-hidden="true" size={18} />{registrationActive ? t("memberEventRegistered") : t("memberEventNotRegistered")}</p>{event.registeredAt && <time dateTime={event.registeredAt} className="mt-1 block text-xs text-[#59645D]">{new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(event.registeredAt))}</time>}</div><div className="mt-4 flex items-start gap-3"><TicketCheck aria-hidden="true" className="text-[#68736C]" size={18} /><p className="text-sm text-[#59645D]">{t("memberEventTicket")}</p></div>{registrationActive && <p className="mt-3 rounded-md border border-[#E6ECE8] p-3 text-xs leading-5 text-[#68736C]">{t("memberEventCancelUnavailable")}</p>}</section>
+        <section className="rounded-xl border border-[#E6ECE8] bg-white p-4" aria-labelledby="member-event-registration-title"><h2 id="member-event-registration-title" className="text-base font-bold text-[#17211B]">{t("memberEventRegistrationDate")}</h2><div className={`mt-3 rounded-lg p-3 ${registrationActive ? "bg-[#F1F7F3]" : "bg-[#F7F8F7]"}`}><p className="flex items-center gap-2 text-sm font-semibold text-[#075C32]"><CheckCircle2 aria-hidden="true" size={18} />{registrationActive ? t("memberEventRegistered") : t("memberEventNotRegistered")}</p>{event.registeredAt && <time dateTime={event.registeredAt} className="mt-1 block text-xs text-[#59645D]">{new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(event.registeredAt))}</time>}</div><div className="mt-4 flex items-start gap-3"><TicketCheck aria-hidden="true" className="text-[#68736C]" size={18} /><p className="text-sm text-[#59645D]">{t("memberEventTicket")}</p></div>{!event.registrationRequired ? <p className="mt-3 text-sm text-slate-600">{locale === "fr" ? "Inscription non requise." : "Registration is not required."}</p> : registrationActive && event.isUpcoming ? <button type="button" disabled={busy} onClick={() => void changeRegistration(true)} className="mt-3 min-h-10 w-full rounded border border-rose-600 px-3 text-sm font-semibold text-rose-700 disabled:opacity-50">{locale === "fr" ? "Annuler mon inscription" : "Cancel registration"}</button> : !registrationActive && event.registrationOpen ? <><label className="mt-3 flex items-start gap-2 text-xs"><input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} /><span>{t("registrationConsent")}</span></label><button type="button" disabled={busy || !consent} onClick={() => void changeRegistration(false)} className="mt-3 min-h-10 w-full rounded bg-emerald-700 px-3 text-sm font-semibold text-white disabled:opacity-50">{locale === "fr" ? "M’inscrire" : "Register as a member"}</button></> : null}{registrationError && <p role="alert" className="mt-2 text-xs text-rose-700">{registrationError}</p>}{registrationMessage && <p role="status" className="mt-2 text-xs text-emerald-700">{registrationMessage}</p>}</section>
         <section className="rounded-xl bg-[#F1F7F3] p-4"><h2 className="text-sm font-bold text-[#17211B]">{t("memberEventOrganizerUnavailable")}</h2><p className="mt-2 text-xs leading-5 text-[#59645D]">{t("memberEventSectionUnavailable")}</p></section>
       </aside>
     </div>

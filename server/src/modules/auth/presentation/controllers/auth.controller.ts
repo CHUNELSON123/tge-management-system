@@ -17,11 +17,29 @@ const recoverySchema = z.object({ token: z.string().min(32).max(256), password: 
 export function createAuthRouter(loginUseCase: LoginUseCase, emailService: EmailService): Router {
   const router = Router();
 
-  router.get("/session", authenticate, (req: AuthenticatedRequest, res: Response) => {
-    res.status(200).json({
-      message: "Session is valid.",
-      data: { userId: req.authenticatedUser!.userId, roleName: req.authenticatedUser!.roleName },
-    });
+  router.get("/session", authenticate, async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const actor = req.authenticatedUser!;
+      const user = await prisma.user.findUnique({
+        where: { id: actor.userId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+      if (!user) {
+        res.status(401).json({ message: "Invalid or inactive account." });
+        return;
+      }
+      res.status(200).json({
+        message: "Session is valid.",
+        data: {
+          userId: actor.userId,
+          roleName: actor.roleName,
+          displayName: `${user.firstName} ${user.lastName}`.trim(),
+          email: user.email,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
   });
 
   router.post("/logout", authenticate, async (req: AuthenticatedRequest, res: Response, next) => {

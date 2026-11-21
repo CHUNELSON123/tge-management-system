@@ -36,14 +36,14 @@ test("public programme browse query excludes cohorts and selects only public pro
     programme: {
       findMany: async (args: Record<string, unknown>) => {
         query = args;
-        return [{ name: "Published programme", slug: "published-programme", description: "Public description", startDate: null, endDate: null }];
+        return [{ name: "Published programme", slug: "published-programme", description: "Public description", coverImageUrl: null, startDate: null, endDate: null }];
       },
     },
   } as never;
   const records = await new PrismaPublicHomePreviewRepository(database).listPublishedProgrammes();
 
   assert.deepEqual(query?.where, { status: "published" });
-  assert.deepEqual(query?.select, { name: true, slug: true, description: true, startDate: true, endDate: true });
-  assert.deepEqual(records, [{ name: "Published programme", slug: "published-programme", description: "Public description", startDate: null, endDate: null }]);
+  assert.deepEqual(query?.select, { name: true, slug: true, description: true, coverImageUrl: true, startDate: true, endDate: true, programmeType: true, targetAudience: true, durationWeeks: true, deliveryMode: true, learningObjectives: true, programContent: true, eligibility: true });
+  assert.deepEqual(records, [{ name: "Published programme", slug: "published-programme", description: "Public description", coverImageUrl: null, startDate: null, endDate: null, programmeType: null, targetAudience: null, durationWeeks: null, deliveryMode: null, learningObjectives: [], programContent: [], eligibility: null }]);
   assert.equal(JSON.stringify(query).includes("cohort"), false);
 });

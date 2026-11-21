@@ -7,11 +7,11 @@ const { prisma } = await import("database");
 const roles = [
   {
     name: "System Administrator",
-    description: "Maintains platform operations, security, user accounts, permissions, and system maintenance.",
+    description: "Maintains platform operations, security, user accounts, permissions, business directory review, and system maintenance.",
   },
   {
     name: "Organisation Administrator",
-    description: "Manages members, programmes, mentors, events, documents, announcements, reports, and website content.",
+    description: "Manages members, business directory reviews, programmes, mentors, events, documents, announcements, reports, and website content.",
   },
   {
     name: "Member",
@@ -28,14 +28,15 @@ const roles = [
 ];
 
 const roleGrants: Record<string, string[]> = {
-  "System Administrator": ["users.manage", "roles.manage", "system.manage", "audit.view", "members.manage", "programmes.manage", "events.manage", "resources.manage", "mentorship.manage", "reports.view", "website.manage"],
-  "Organisation Administrator": ["users.manage", "members.manage", "programmes.manage", "events.manage", "resources.manage", "mentorship.manage", "reports.view", "website.manage"],
+  "System Administrator": ["payments.manage", "users.manage", "roles.manage", "system.manage", "audit.view", "members.manage", "programmes.manage", "events.manage", "resources.manage", "mentorship.manage", "businesses.manage", "reports.view", "website.manage"],
+  "Organisation Administrator": ["payments.manage", "users.manage", "members.manage", "programmes.manage", "events.manage", "resources.manage", "mentorship.manage", "businesses.manage", "reports.view", "website.manage", "audit.view"],
   Member: ["profile.manage", "resources.read", "events.read", "mentorship.read"],
   Mentor: ["assigned-members.read", "mentorship.manage", "resources.manage", "events.read"],
   "Trainer / Facilitator": ["assigned-members.read", "programmes.deliver", "resources.manage", "events.read"],
 };
 
 const permissions = [
+  ["payments.manage", "Manage fees, charges and manual payment records"],
   ["users.manage", "Create and manage user accounts"],
   ["roles.manage", "Manage roles and permissions"],
   ["system.manage", "Manage platform settings"],
@@ -48,6 +49,7 @@ const permissions = [
   ["resources.manage", "Manage learning resources"],
   ["resources.read", "View available resources"],
   ["mentorship.manage", "Manage assigned mentorship activities"],
+  ["businesses.manage", "Review and manage business directory listings"],
   ["mentorship.read", "View mentorship activities"],
   ["assigned-members.read", "View assigned participants"],
   ["reports.view", "View operational reports"],

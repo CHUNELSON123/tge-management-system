@@ -172,7 +172,7 @@ export function MemberProfilePage() {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size === 0 || file.size > 3 * 1024 * 1024) {
+    if (!["image/jpeg", "image/png"].includes(file.type) || file.size === 0 || file.size > 2 * 1024 * 1024) {
       setPhotoError(t("profilePhotoInvalid"));
       setPhotoSaved(false);
       return;
@@ -235,7 +235,7 @@ export function MemberProfilePage() {
             <div className="relative grid h-24 w-24 shrink-0 place-items-center self-center overflow-hidden rounded-full bg-[#EAF3ED] text-3xl font-bold text-[#075C32] sm:h-28 sm:w-28">
               {photoUrl ? <Image unoptimized src={photoUrl} alt={fullName || t("profileTitle")} width={112} height={112} className="h-full w-full object-cover" /> : initials}
               <label className="absolute bottom-0 right-0 grid h-9 w-9 cursor-pointer place-items-center rounded-full border-2 border-white bg-[#F2F6F4] text-[#075C32] hover:bg-[#E4F3E9] focus-within:ring-2 focus-within:ring-[#147E4A]" title={t("profilePhotoChange")}>
-                <input type="file" accept="image/jpeg,image/png,image/webp" aria-label={t("profilePhotoChange")} onChange={uploadPhoto} disabled={photoSaving} className="sr-only" />
+                <input type="file" accept="image/jpeg,image/png" aria-label={t("profilePhotoChange")} onChange={uploadPhoto} disabled={photoSaving} className="sr-only" />
                 {photoSaving ? <span className="text-xs" aria-hidden="true">…</span> : <Camera aria-hidden="true" size={17} />}
               </label>
             </div>

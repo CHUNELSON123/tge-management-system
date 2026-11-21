@@ -2,5 +2,16 @@ import { GetMemberMessagesUseCase } from "./application/get-member-messages.usec
 import { MemberCallSignalingService } from "./application/member-call-signaling.service.js";
 import { PrismaMemberMessagesRepository } from "./infrastructure/prisma-member-messages.repository.js";
 import { createMemberMessagesRouter } from "./presentation/member-messages.controller.js";
+import { MemberPresenceService } from "./application/member-presence.service.js";
+import { PrismaMemberPresenceRepository } from "./infrastructure/prisma-member-presence.repository.js";
+import { PrismaCallHistoryRepository } from "./infrastructure/prisma-call-history.repository.js";
 const repository = new PrismaMemberMessagesRepository();
-export const memberMessagesRouter = createMemberMessagesRouter(new GetMemberMessagesUseCase(repository), new MemberCallSignalingService(repository));
+const useCase = new GetMemberMessagesUseCase(repository);
+const history = new PrismaCallHistoryRepository();
+const signaling = new MemberCallSignalingService(repository, history);
+const expireCalls = () => void history.expire().catch((error) => console.error("Could not update missed calls", error));
+expireCalls();
+setInterval(expireCalls, 5_000).unref();
+const presence = new MemberPresenceService(new PrismaMemberPresenceRepository());
+export const memberMessagesRouter = createMemberMessagesRouter(useCase, signaling, ["Member"], presence);
+export const sharedMessagesRouter = createMemberMessagesRouter(useCase, signaling, ["Member", "Mentor", "System Administrator", "Organisation Administrator"], presence);

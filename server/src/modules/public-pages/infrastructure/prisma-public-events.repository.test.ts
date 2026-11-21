@@ -10,9 +10,11 @@ test("public event listing filters published events and selects a public field a
 
   assert.deepEqual(query?.where, { status: "published" });
   assert.deepEqual(query?.select, {
-    id: true, title: true, eventType: true, description: true, startAt: true, endAt: true, timezone: true, venue: true,
+    id: true, title: true, shortDescription: true, eventType: true, description: true, startAt: true, endAt: true, timezone: true, venue: true, registrationRequired: true,
   });
-  assert.equal(JSON.stringify(query).includes("registration"), false);
+  assert.equal(JSON.stringify(query).includes("registrations"), false);
+  assert.equal(JSON.stringify(query).includes("capacity"), false);
+  assert.equal(JSON.stringify(query).includes("meetingUrl"), false);
   assert.equal(JSON.stringify(query).includes("createdByUserId"), false);
 });
 

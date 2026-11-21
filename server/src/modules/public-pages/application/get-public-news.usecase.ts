@@ -12,6 +12,7 @@ export interface PublicNewsRepository {
   findPublishedNewsBySlug(slug: string, now: Date): Promise<PublicNewsArticle | null>;
 }
 
+
 export class GetPublicNewsUseCase {
   constructor(private readonly repository: PublicNewsRepository) {}
   execute(now = new Date()) { return this.repository.listPublishedNews(now); }

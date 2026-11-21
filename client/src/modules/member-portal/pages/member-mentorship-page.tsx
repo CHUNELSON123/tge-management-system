@@ -1,21 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { CalendarDays, Clock3, FileText, GraduationCap, MessageSquare, UsersRound, Video } from "lucide-react";
 import { useLanguage } from "@/modules/i18n/language-provider";
 import { useCurrentTime } from "@/hooks/use-current-time";
 import { useMemberMentorship } from "../hooks/use-member-mentorship";
 import { useMemberResources } from "../hooks/use-member-resources";
+import { MentorshipDeliveryPanel } from "@/modules/mentorship-delivery/components/mentorship-delivery-panel";
 
 export function MemberMentorshipPage() {
   const { locale, t } = useLanguage();
   const { data, loading, failed, retry } = useMemberMentorship();
   const { data: allResources } = useMemberResources();
+  const [selectedAssignment, setSelectedAssignment] = useState("");
   const isFrench = locale === "fr";
   const now = useCurrentTime() ?? 0;
-  const sessions = data?.assignments.flatMap((assignment) => assignment.sessions.map((session) => ({ ...session, mentorName: assignment.mentorName, expertise: assignment.expertise }))) ?? [];
-  const upcomingSessions = sessions.filter((session) => session.status.toLowerCase() === "scheduled" && new Date(session.scheduledStart).getTime() >= now).sort((a, b) => a.scheduledStart.localeCompare(b.scheduledStart));
+  const sessions = data?.assignments.flatMap((assignment) => assignment.sessions.map((session) => ({ ...session, assignmentId: assignment.id, assignmentStatus: assignment.status, mentorName: assignment.mentorName, expertise: assignment.expertise }))) ?? [];
+  const upcomingSessions = sessions.filter((session) => session.assignmentStatus.toLowerCase() === "active" && session.status.toLowerCase() === "scheduled" && new Date(session.scheduledStart).getTime() >= now).sort((a, b) => a.scheduledStart.localeCompare(b.scheduledStart));
   const nextSession = upcomingSessions[0] ?? null;
   const activeAssignments = data?.assignments.filter((assignment) => assignment.status.toLowerCase() === "active") ?? [];
   const history = sessions.filter((session) => session.status.toLowerCase() === "completed").sort((a, b) => b.scheduledStart.localeCompare(a.scheduledStart)).slice(0, 5);
@@ -33,6 +35,7 @@ export function MemberMentorshipPage() {
 
   return <section aria-labelledby="member-mentorship-title" className="space-y-5">
     <header className="flex flex-wrap items-center justify-between gap-4"><div><h1 id="member-mentorship-title" className="text-2xl font-bold text-[#111B16] sm:text-3xl">{text.title}</h1><p className="mt-2 text-sm text-[#59645D]">{text.intro}</p></div><button type="button" disabled title={text.noMentors} className="inline-flex min-h-11 cursor-not-allowed items-center gap-2 rounded-lg bg-[#006B3B] px-4 text-sm font-semibold text-white opacity-60"><UsersRound size={17}/>{text.find}</button></header>
+    <p className={`rounded-lg border p-4 text-sm ${data.secondStageComplete ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-amber-200 bg-amber-50 text-amber-900"}`}>{data.secondStageComplete ? (isFrench ? "Vous remplissez les conditions de formation pour le mentorat. Un administrateur peut vous attribuer un mentor." : "You meet the programme requirements for mentorship. An administrator can assign a mentor.") : !data.foundationComplete ? (isFrench ? "Terminez TGE Foundation, puis Young Entrepreneur ou The Entrepreneur, avant le mentorat." : "Complete TGE Foundation, then Young Entrepreneur or The Entrepreneur, before mentorship.") : (isFrench ? "Terminez Young Entrepreneur ou The Entrepreneur après Foundation avant le mentorat." : "Complete Young Entrepreneur or The Entrepreneur after Foundation before mentorship.")}</p>
 
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
       {[
@@ -47,10 +50,11 @@ export function MemberMentorshipPage() {
       <div className="space-y-5">
         <section className="rounded-xl border border-[#E6ECE8] p-4 sm:p-5" aria-labelledby="member-active-mentorships"><div className="mb-4 flex items-center justify-between"><h2 id="member-active-mentorships" className="font-bold text-[#17211B]">{text.activeHeading}</h2>{activeAssignments.length > 0 && <span className="text-xs text-[#087443]">{activeAssignments.length} {text.viewAll} →</span>}</div>
           {activeAssignments.length ? <div className="grid gap-3 lg:grid-cols-2">{activeAssignments.map((assignment) => {
-            const next = upcomingSessions.find((session) => session.mentorName === assignment.mentorName);
-            return <article key={assignment.id} className="rounded-xl border border-[#E9EEEB] p-4"><div className="flex items-center gap-3"><span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#E9F4EC] text-lg font-bold text-[#087443]">{initials(assignment.mentorName)}</span><div className="min-w-0"><h3 className="font-bold text-[#17211B]">{assignment.mentorName}</h3>{assignment.expertise && <span className="mt-1 inline-block rounded-full bg-[#EAF5EE] px-2 py-1 text-xs font-semibold text-[#087443]">{assignment.expertise}</span>}</div></div><div className="mt-4 space-y-2 text-sm text-[#59645D]">{assignment.programmeName && <p>{assignment.programmeName}</p>}{next ? <><p className="flex items-center gap-2"><CalendarDays size={15}/>{text.next}: {formatDate(next.scheduledStart)}</p><p className="flex items-center gap-2"><Video size={15}/>{text.topic}: {next.title}</p></> : <p>{text.noUpcoming}</p>}</div><div className="mt-4 grid grid-cols-2 gap-2"><Link href="/portal/messages" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#0A7A43] px-3 text-sm font-semibold text-[#087443]"><MessageSquare size={15}/>{text.message}</Link><button disabled title={text.unavailable} className="min-h-10 cursor-not-allowed rounded-lg bg-[#006B3B] px-3 text-sm font-semibold text-white opacity-60">{text.details}</button></div></article>;
+            const next = upcomingSessions.find((session) => session.assignmentId === assignment.id);
+            return <article key={assignment.id} className="rounded-xl border border-[#E9EEEB] p-4"><div className="flex items-center gap-3"><span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#E9F4EC] text-lg font-bold text-[#087443]">{initials(assignment.mentorName)}</span><div className="min-w-0"><h3 className="font-bold text-[#17211B]">{assignment.mentorName}</h3>{assignment.expertise && <span className="mt-1 inline-block rounded-full bg-[#EAF5EE] px-2 py-1 text-xs font-semibold text-[#087443]">{assignment.expertise}</span>}</div></div><div className="mt-4 space-y-2 text-sm text-[#59645D]">{assignment.programmeName && <p>{assignment.programmeName}</p>}{next ? <><p className="flex items-center gap-2"><CalendarDays size={15}/>{text.next}: {formatDate(next.scheduledStart)}</p><p className="flex items-center gap-2"><Video size={15}/>{text.topic}: {next.title}</p></> : <p>{text.noUpcoming}</p>}</div><div className="mt-4 grid grid-cols-2 gap-2"><Link href="/portal/messages" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#0A7A43] px-3 text-sm font-semibold text-[#087443]"><MessageSquare size={15}/>{text.message}</Link><button type="button" onClick={() => setSelectedAssignment(assignment.id)} className="min-h-10 rounded-lg bg-[#006B3B] px-3 text-sm font-semibold text-white">{text.details}</button></div></article>;
           })}</div> : <p className="rounded-lg border border-dashed border-[#CBD8CE] p-5 text-sm text-[#59645D]">{text.noAssignments}</p>}
         </section>
+        {selectedAssignment && <div className="space-y-2"><button type="button" onClick={() => setSelectedAssignment("")} className="text-sm font-semibold text-green-700">Close details</button><MentorshipDeliveryPanel key={selectedAssignment} assignmentId={selectedAssignment} role="member"/></div>}{(data?.assignments || []).some(item => item.status !== "active") && <section className="rounded-xl border p-4"><h2 className="font-bold">Past mentorship assignments</h2>{data?.assignments.filter(item => item.status !== "active").map(item => <button type="button" key={item.id} onClick={() => setSelectedAssignment(item.id)} className="mt-2 block text-left text-sm text-green-700 underline">{item.mentorName} · {item.status} · View progress and reports</button>)}</section>}
         <section className="rounded-xl border border-[#E6ECE8] p-4 sm:p-5" aria-labelledby="member-recommended-mentors"><div className="mb-3 flex items-center justify-between"><h2 id="member-recommended-mentors" className="font-bold text-[#17211B]">{text.recommended}</h2><span className="text-xs text-[#68736C]">{text.viewMentors} →</span></div><p className="rounded-lg bg-[#F7F9F8] p-4 text-sm text-[#59645D]">{text.noMentors}</p></section>
         {history.length > 0 && <section className="rounded-xl border border-[#E6ECE8] p-4 sm:p-5" aria-labelledby="member-mentorship-history"><h2 id="member-mentorship-history" className="mb-3 font-bold text-[#17211B]">{text.history}</h2><ul className="divide-y divide-[#EDF0EE]">{history.map((session) => <li key={session.id} className="flex flex-wrap justify-between gap-2 py-3 text-sm"><span>{session.title} · {session.mentorName}</span><time className="text-[#59645D]">{formatDate(session.scheduledStart)}</time></li>)}</ul></section>}
       </div>

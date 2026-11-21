@@ -1,0 +1,1 @@
+ALTER TABLE "cohorts" ADD COLUMN "progress_revision" INTEGER NOT NULL DEFAULT 0;

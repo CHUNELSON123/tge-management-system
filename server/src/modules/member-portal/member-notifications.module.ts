@@ -2,3 +2,4 @@ import { GetMemberNotificationsUseCase } from "./application/get-member-notifica
 import { PrismaMemberNotificationsRepository } from "./infrastructure/prisma-member-notifications.repository.js";
 import { createMemberNotificationsRouter } from "./presentation/member-notifications.controller.js";
 export const memberNotificationsRouter = createMemberNotificationsRouter(new GetMemberNotificationsUseCase(new PrismaMemberNotificationsRepository()));
+export const sharedNotificationsRouter = createMemberNotificationsRouter(new GetMemberNotificationsUseCase(new PrismaMemberNotificationsRepository()), ["Member", "Mentor", "System Administrator", "Organisation Administrator"]);

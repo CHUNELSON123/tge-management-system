@@ -35,6 +35,7 @@ export default function EventRegistrationPage() {
   return <main className="mx-auto max-w-5xl px-5 py-8 sm:px-8">
     <nav aria-label={t("breadcrumbNavigation")} className="mb-5 flex flex-wrap gap-2 text-xs"><Link href="/">{t("home")}</Link><span>›</span><Link href="/events">{t("events")}</Link><span>›</span><Link href={`/events/${eventId}`}>{t("eventDetailsHeading")}</Link><span>›</span><span>{t("registerForEvent")}</span></nav>
     <h1 className="text-3xl font-bold">{t("registerForEvent")}</h1><p className="mt-2 text-sm text-gray-600">{t("registrationIntro")}</p>
+    <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950">{locale === "fr" ? "Vous êtes membre ? Inscrivez-vous depuis votre compte pour retrouver cet événement dans votre portail." : "Are you a member? Register from your account so the event is linked to your profile."} <Link href={`/portal/events/${encodeURIComponent(eventId)}`} className="font-semibold underline">{locale === "fr" ? "Inscription membre" : "Member registration"}</Link></p>
     <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_300px]">
       <form onSubmit={submit} className="space-y-4 rounded-xl border p-5">
         <h2 className="text-xl font-bold">{event.title}</h2><p className="text-sm text-gray-600">{formatEventDate(event.startAt, locale === "fr" ? "fr-CA" : "en-CA", event.timezone)} · {formatEventTime(event.startAt, locale === "fr" ? "fr-CA" : "en-CA", event.timezone)}</p>

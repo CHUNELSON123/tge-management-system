@@ -15,7 +15,7 @@ export class PrismaMemberResourcesRepository implements MemberResourcesRepositor
       where: {
         status: "published", publishedAt: { not: null, lte: now },
         OR: [
-          { accessLevel: { in: ["public", "member"] } },
+          { accessLevel: { in: ["public", "member"] }, programmes: { none: {} }, cohorts: { none: {} } },
           ...(programmeIds.length ? [{ programmes: { some: { programmeId: { in: programmeIds } } } }] : []),
           ...(cohortIds.length ? [{ cohorts: { some: { cohortId: { in: cohortIds } } } }] : []),
         ],
@@ -42,7 +42,7 @@ export class PrismaMemberResourcesRepository implements MemberResourcesRepositor
       where: {
         id: resourceId, status: "published", publishedAt: { not: null, lte: now },
         OR: [
-          { accessLevel: { in: ["public", "member"] } },
+          { accessLevel: { in: ["public", "member"] }, programmes: { none: {} }, cohorts: { none: {} } },
           ...(programmeIds.length ? [{ programmes: { some: { programmeId: { in: programmeIds } } } }] : []),
           ...(cohortIds.length ? [{ cohorts: { some: { cohortId: { in: cohortIds } } } }] : []),
         ],
