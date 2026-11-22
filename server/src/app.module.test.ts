@@ -17,6 +17,10 @@ test('the application limits all API routes before authentication and parsing, i
     }
   }
   const { createApp } = await import('./app.module.js');
+  // App initialization starts a background task that may open the shared Prisma pool.
+  // Close that pool after this test so its worker can exit when PostgreSQL is reachable.
+  const { prisma } = await import('database');
+  t.after(async () => { await prisma.$disconnect(); });
   const app = createApp();
   app.post('/api/future-route', (_req, res) => res.json({ ok: true }));
   app.get('/status', (_req, res) => res.json({ ok: true }));
