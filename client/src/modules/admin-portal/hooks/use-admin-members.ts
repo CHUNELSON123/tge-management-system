@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { adminAccessService } from "../services/admin-access.service";
 import { adminMembersService, AdminMembersRequestError } from "../services/admin-members.service";
@@ -55,7 +55,7 @@ export function useAdminMembers() {
     return () => controller.abort();
   }, [query, router, version]);
 
-  function applyFilters(next: typeof filters) { setFilters(next); setPage(1); }
+  const applyFilters = useCallback((next: typeof filters) => { setFilters(next); setPage(1); }, []);
   function reset() { applyFilters({ search: "", status: "", programmeId: "", cohortId: "" }); }
   function retry() { setVersion((current) => current + 1); }
   return { data, loading, failed, filters, applyFilters, reset, page, setPage, pageSize, setPageSize, retry, canCreate: Boolean(access?.permissions.includes("members.manage") && access.permissions.includes("users.manage")), canReviewApplications: Boolean(access?.permissions.includes("users.manage")) };

@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { BookOpen, GraduationCap, TrendingUp, UsersRound } from "lucide-react";
 import { programmeCoverUrl } from "@/lib/programme-cover-url";
@@ -23,4 +24,4 @@ export function MentorProgrammesPage({ work }: { work: Work }) {
     {selected && <div className="fixed inset-0 z-[80] grid place-items-center bg-black/40 p-4"><section role="dialog" aria-modal="true" aria-label={`${selected.name} details`} className="w-full max-w-lg rounded-xl bg-white p-5 shadow-xl"><div className="flex items-start gap-4"><Cover programme={selected}/><div><h2 className="text-lg font-bold">{selected.name}</h2><p className="text-sm text-green-700">{selected.status}</p></div></div><p className="mt-4 whitespace-pre-wrap text-sm text-slate-600">{selected.description || "No description has been provided."}</p><h3 className="mt-4 text-sm font-bold">Assigned cohorts</h3>{work.cohorts.filter((c) => c.programme.id === selected.id).map((c) => <p key={c.id} className="mt-2 text-sm">{c.name} · {c.enrollments.length} members · {formatDate(c.startDate)}</p>)}<button onClick={() => setSelected(null)} className="mt-5 rounded border px-4 py-2 text-sm">Close</button></section></div>}
   </div>;
 }
-function Cover({ programme }: { programme: Programme }) { return programme.coverImageUrl ? <img src={programmeCoverUrl(programme.coverImageUrl)} alt="" className="h-14 w-16 shrink-0 rounded object-cover"/> : <span className="grid h-14 w-16 shrink-0 place-items-center rounded bg-green-50 text-green-700"><BookOpen size={22}/></span>; }
+function Cover({ programme }: { programme: Programme }) { return programme.coverImageUrl ? <Image unoptimized width={128} height={128} src={programmeCoverUrl(programme.coverImageUrl)} alt="" className="h-14 w-16 shrink-0 rounded object-cover"/> : <span className="grid h-14 w-16 shrink-0 place-items-center rounded bg-green-50 text-green-700"><BookOpen size={22}/></span>; }

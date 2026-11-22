@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { ChevronLeft, ChevronRight, Filter, MoreHorizontal, Plus, RotateCw, Search, Shield, UserPlus, UserRoundX, UsersRound } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreHorizontal, Plus, RotateCw, Search, Shield, UserPlus, UserRoundX, UsersRound } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAdminText } from "../hooks/use-admin-text";
 import { adminUsersService } from "../services/admin-users.service";

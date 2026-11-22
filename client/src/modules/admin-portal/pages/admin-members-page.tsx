@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -9,7 +10,6 @@ import {
   Clock3,
   Download,
   Ellipsis,
-  Filter,
   GraduationCap,
   RotateCcw,
   Search,
@@ -67,7 +67,7 @@ export function AdminMembersPage() {
   } = useAdminMembers();
   const [draft, setDraft] = useState(filters);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  useEffect(() => { const timer = window.setTimeout(() => { applyFilters(draft); setSelectedIds([]); }, 350); return () => window.clearTimeout(timer); }, [draft]);
+  useEffect(() => { const timer = window.setTimeout(() => { applyFilters(draft); setSelectedIds([]); }, 350); return () => window.clearTimeout(timer); }, [draft, applyFilters]);
   const photos = useAdminMemberPhotos(data?.rows.map(({ id }) => id) ?? []);
   const pageCount = Math.max(1, Math.ceil((data?.total ?? 0) / pageSize));
   const first = data?.total ? (page - 1) * pageSize + 1 : 0;
@@ -246,7 +246,7 @@ export function AdminMembersPage() {
 function MemberAvatar({ name, photo, size }: { name: string; photo?: string; size: "small" | "large" }) {
   const dimension = size === "small" ? "h-9 w-9 text-xs" : "h-11 w-11 text-sm";
   return <span className={`grid shrink-0 place-items-center overflow-hidden rounded-full bg-[#EAF3ED] font-bold text-[#075C32] ${dimension}`}>
-    {photo ? <img src={photo} alt="" className="h-full w-full object-cover" /> : initials(name)}
+    {photo ? <Image unoptimized width={128} height={128} src={photo} alt="" className="h-full w-full object-cover" /> : initials(name)}
   </span>;
 }
 

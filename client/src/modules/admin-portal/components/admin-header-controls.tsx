@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -56,7 +57,7 @@ export function AdminHeaderControls({ displayName, email, roleName, compact = fa
     </div>
     <div className="relative">
       <button type="button" aria-label={`${t("adminAccount")}: ${displayName}`} aria-haspopup="menu" aria-expanded={accountOpen} onClick={() => { setAccountOpen((open) => !open); setNotificationOpen(false); }} className="inline-flex min-h-11 items-center gap-2 rounded-lg px-1.5 py-1 text-left hover:bg-[#F2F6F4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A] focus-visible:ring-offset-2">
-        <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#EAF3ED] text-[#075C32]" aria-hidden="true">{photoUrl ? <img src={photoUrl} alt="" className="h-full w-full object-cover" /> : <UserRound size={20} />}</span>
+        <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#EAF3ED] text-[#075C32]" aria-hidden="true">{photoUrl ? <Image unoptimized width={128} height={128} src={photoUrl} alt="" className="h-full w-full object-cover" /> : <UserRound size={20} />}</span>
         {!compact && <span className="hidden max-w-28 text-xs font-semibold leading-4 text-[#17211B] xl:block">{displayName}</span>}
         <ChevronDown aria-hidden="true" size={15} className="hidden text-[#52645A] sm:block" />
       </button>

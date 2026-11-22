@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, ChevronLeft, ChevronRight, Download, FileText, Filter, Folder, Plus, RefreshCw, Search, Users } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, Download, FileText, Folder, Plus, RefreshCw, Search, Users } from "lucide-react";
 import { useAdminResources } from "../hooks/use-admin-resources";
 
 const statusStyle={published:"bg-emerald-50 text-emerald-800",draft:"bg-amber-50 text-amber-800",archived:"bg-slate-100 text-slate-700"};

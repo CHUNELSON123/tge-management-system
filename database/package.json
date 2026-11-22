@@ -26,6 +26,11 @@
     "dotenv": "^18.0.8",
     "pg": "^8.23.1"
   },
+  "overrides": {
+    "@prisma/config": {
+      "effect": "3.22.1"
+    }
+  },
   "devDependencies": {
     "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",

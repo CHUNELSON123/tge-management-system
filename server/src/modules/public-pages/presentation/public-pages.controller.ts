@@ -202,7 +202,7 @@ export function createPublicPagesRouter(
     const { name, email, phone, consent } = req.body ?? {};
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(eventId) ||
       typeof name !== "string" || name.trim().length < 2 || name.trim().length > 200 ||
-      typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 255 ||
+      typeof email !== "string" || email.length > 255 || !/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email) ||
       typeof phone !== "string" || phone.trim().length < 5 || phone.length > 30 || consent !== true) {
       res.status(400).json({ message: "Enter valid registration details and accept the event terms and privacy notice." });
       return;

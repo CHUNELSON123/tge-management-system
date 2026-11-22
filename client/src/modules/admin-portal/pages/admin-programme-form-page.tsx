@@ -66,7 +66,7 @@ export function AdminProgrammeFormPage({ programmeId }: { programmeId?: string }
     setFormDraft({
       ...current,
       name: template.name,
-      code: `TGE-${key.toUpperCase().replaceAll("-", "-")}`,
+      code: `TGE-${key.toUpperCase()}`,
       slug: slugify(template.name),
       programmeType: template.programmeType,
       targetAudience: template.targetAudience,

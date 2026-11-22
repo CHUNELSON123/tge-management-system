@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -69,7 +70,7 @@ export function AdminMemberEditPage() {
       {saved && <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{t("adminMemberSaved")}</p>}
 
       <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
-        <section className="rounded-xl border border-[#E4EBE6] bg-white p-4"><h2 className="text-sm font-bold text-[#17211B]">{t("profilePhotoChange")}</h2><div className="mx-auto mt-4 grid h-36 w-36 place-items-center overflow-hidden rounded-xl bg-[#EAF3ED] text-3xl font-bold text-[#075C32]">{photo.photoUrl ? <img src={photo.photoUrl} alt={currentName} className="h-full w-full object-cover" /> : initials(currentName) || <UserRound aria-hidden="true" size={36} />}</div><label className="mt-4 flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#16864D] px-3 text-sm font-semibold text-[#075C32] hover:bg-[#EFF6F1]">{photo.saving ? t("adminSaving") : <><ImagePlus aria-hidden="true" size={16} />{t("profilePhotoChange")}</>}<input type="file" accept="image/jpeg,image/png" disabled={photo.saving} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void photo.upload(file); }} className="sr-only" /></label><p className="mt-2 text-center text-[11px] text-[#65736A]">JPG, PNG · 2 MB</p></section>
+        <section className="rounded-xl border border-[#E4EBE6] bg-white p-4"><h2 className="text-sm font-bold text-[#17211B]">{t("profilePhotoChange")}</h2><div className="mx-auto mt-4 grid h-36 w-36 place-items-center overflow-hidden rounded-xl bg-[#EAF3ED] text-3xl font-bold text-[#075C32]">{photo.photoUrl ? <Image unoptimized width={128} height={128} src={photo.photoUrl} alt={currentName} className="h-full w-full object-cover" /> : initials(currentName) || <UserRound aria-hidden="true" size={36} />}</div><label className="mt-4 flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-md border border-[#16864D] px-3 text-sm font-semibold text-[#075C32] hover:bg-[#EFF6F1]">{photo.saving ? t("adminSaving") : <><ImagePlus aria-hidden="true" size={16} />{t("profilePhotoChange")}</>}<input type="file" accept="image/jpeg,image/png" disabled={photo.saving} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void photo.upload(file); }} className="sr-only" /></label><p className="mt-2 text-center text-[11px] text-[#65736A]">JPG, PNG · 2 MB</p></section>
 
         <section className="rounded-xl border border-[#E4EBE6] bg-white p-4 sm:p-5"><h2 className="mb-4 text-sm font-bold text-[#17211B]">{t("adminPersonalInformation")}</h2><div className="grid gap-4 sm:grid-cols-2">
           {textInput("firstName", "adminFirstName", true)}{textInput("lastName", "adminLastName", true)}

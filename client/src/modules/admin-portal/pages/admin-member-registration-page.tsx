@@ -2,6 +2,7 @@
 
 import { useState, useEffect, type FormEvent } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronRight, Save } from "lucide-react";
 import { useLanguage } from "@/modules/i18n/language-provider";
 import { AdminMembersRequestError, adminMembersService } from "../services/admin-members.service";
@@ -10,6 +11,7 @@ import type { AdminDirectMemberInput } from "../types/admin-members.types";
 const emptyDraft: AdminDirectMemberInput = { firstName: "", lastName: "", email: "", phone: null, location: null, dateOfBirth: null, gender: null, nationality: null, preferredLanguage: null, timezone: null, bio: null };
 
 export function AdminMemberRegistrationPage() {
+  const router = useRouter();
   const { t, locale } = useLanguage();
   const [countries, setCountries] = useState<string[]>([]);
   const [timezones, setTimezones] = useState<string[]>([]);
@@ -21,7 +23,7 @@ export function AdminMemberRegistrationPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const token = localStorage.getItem("tge.accessToken") ?? sessionStorage.getItem("tge.accessToken");
-    if (!token) { window.location.assign("/admin/login"); return; }
+    if (!token) { router.push("/admin/login"); return; }
     setBusy(true); setFeedback(null);
     try {
       const result = await adminMembersService.register(token, { ...draft, email: draft.email.trim().toLowerCase() });
