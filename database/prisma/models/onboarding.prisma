@@ -1,0 +1,52 @@
+enum MembershipApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model MembershipApplication {
+  id                 String                      @id @default(uuid()) @db.Uuid
+  applicantFirstName String                      @map("applicant_first_name") @db.VarChar(100)
+  applicantLastName  String                      @map("applicant_last_name") @db.VarChar(100)
+  applicantEmail     String                      @map("applicant_email") @db.VarChar(255)
+  applicantPhone     String?                     @map("applicant_phone") @db.VarChar(30)
+  applicantLocation String? @map("applicant_location") @db.VarChar(255)
+  applicantDateOfBirth DateTime? @map("applicant_date_of_birth") @db.Date
+  applicantGender String? @map("applicant_gender") @db.VarChar(50)
+  applicantNationality String? @map("applicant_nationality") @db.VarChar(100)
+  applicantPreferredLanguage String? @map("applicant_preferred_language") @db.VarChar(5)
+  applicantTimezone String? @map("applicant_timezone") @db.VarChar(100)
+  applicantBio String? @map("applicant_bio") @db.VarChar(250)
+  status             MembershipApplicationStatus @default(PENDING)
+  rejectionReason    String?                     @map("rejection_reason") @db.Text
+  reviewedByUserId   String?                     @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt         DateTime?                   @map("reviewed_at") @db.Timestamptz(6)
+  userId             String?                     @map("user_id") @db.Uuid
+  createdAt          DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user       User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reviewedBy User? @relation("MembershipApplicationReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([applicantEmail])
+  @@index([status])
+  @@index([userId])
+  @@index([reviewedByUserId])
+  @@map("membership_applications")
+}
+
+model AccountActivationToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("account_activation_tokens")
+}

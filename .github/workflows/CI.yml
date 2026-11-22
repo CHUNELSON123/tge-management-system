@@ -2,294 +2,162 @@ name: CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [develop, main]
   push:
-    branches: [ main ]
+    branches: [develop, main]
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-matrix:
-    name: Build, lint, typecheck and tests (node ${{ matrix.node-version }})
+  quality:
+    name: Quality (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        node-version: [18, 20]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-
-      - name: Cache npm and node_modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.npm
-            **/node_modules
-          key: ${{ runner.os }}-node-${{ matrix.node-version }}-lockfile-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-${{ matrix.node-version }}-
-
-      # Migration presence enforcement (only on PRs)
-      - name: Ensure migrations accompany schema changes (PRs only)
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          echo "Checking for schema.prisma changes and corresponding migration files..."
-          CHANGED=$(git diff --name-only origin/main...HEAD || true)
-          echo "Changed files:"
-          echo "$CHANGED"
-          if echo "$CHANGED" | grep -q '^database/prisma/schema.prisma$'; then
-            echo "schema.prisma changed — verifying migration files were added/modified under database/prisma/migrations/"
-            if echo "$CHANGED" | grep -q '^database/prisma/migrations/'; then
-              echo "Migration files detected in the PR."
-            else
-              echo "ERROR: schema.prisma changed but no migration files were added under database/prisma/migrations/"
-              echo "Per repository policy, please run: npx prisma migrate dev --name descriptive-name and commit the generated SQL migration files."
-              exit 1
-            fi
-          else
-            echo "schema.prisma not changed — skipping migration presence check."
-          fi
-
-      # Root install to ensure workspace-local packages (like @tge/database) are linked
-      - name: Install root dependencies (monorepo workspace)
-        run: npm ci
-
-      # Generate Prisma Client early so builds/typechecks can import generated types
-      - name: Prisma - generate (ensure generated client available)
-        run: npx prisma generate --schema=database/prisma/schema.prisma
-        env:
-          PRISMA_HIDE_UPDATE_NOTICE: 1
-
-      # CLIENT: lint, typecheck, build
-      - name: Lint client
-        run: npm run lint --prefix client
-
-      - name: Type-check client (tsc)
-        run: npx tsc --noEmit --project client/tsconfig.json
-
-      - name: Build client (Next.js)
-        run: npm run build --prefix client
-
-      # SERVER: typecheck and build
-      - name: Type-check server
-        run: npm run typecheck --prefix server
-
-      - name: Build server
-        run: npm run build --prefix server
-
-      # TESTS: FAIL if missing or placeholder (encourages adding tests)
-      - name: Ensure client has tests
-        run: |
-          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('client/package.json')); if(!p.scripts||!p.scripts.test){console.error('client test script missing'); process.exit(2);} if(p.scripts.test.match(/echo\\s+\"Error: no test specified\"/)){console.error('client test script is placeholder'); process.exit(2);} console.log('client tests present');"
-
-      - name: Run client tests
-        run: npm run test --prefix client
-
-      - name: Ensure server has tests
-        run: |
-          node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('server/package.json')); if(!p.scripts||!p.scripts.test){console.error('server test script missing'); process.exit(2);} if(p.scripts.test.match(/echo\\s+\"Error: no test specified\"/)){console.error('server test script is placeholder'); process.exit(2);} console.log('server tests present');"
-
-      - name: Run server tests
-        run: npm run test --prefix server
-
-      # Double-check Prisma generate (idempotent) to verify schema validity
-      - name: Prisma - generate (static schema check)
-        run: npx prisma generate --schema=database/prisma/schema.prisma
-        env:
-          PRISMA_HIDE_UPDATE_NOTICE: 1
-
-  prisma-checks:
-    name: Prisma schema checks and optional migrate status/deploy
-    runs-on: ubuntu-latest
-    needs: build-matrix
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node 18
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Install prisma (transient)
-        run: npm install prisma --no-save
-
-      - name: Prisma generate (static check)
-        run: npx prisma generate --schema=database/prisma/schema.prisma
-
-      - name: Optional: Prisma migrate status (runs only if DATABASE_URL secret is set)
-        if: ${{ secrets.DATABASE_URL != '' }}
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: npx prisma migrate status --schema=database/prisma/schema.prisma
-
-      - name: Optional: Prisma migrate deploy to production (ONLY on main and when DATABASE_URL present)
-        if: ${{ github.ref == 'refs/heads/main' && secrets.DATABASE_URL != '' }}
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          echo "Running prisma migrate deploy against DATABASE_URL provided in secrets (production path)."
-          npx prisma migrate deploy --schema=database/prisma/schema.prisma
-
-      - name: Migration instructions when DATABASE_URL is not provided
-        if: ${{ secrets.DATABASE_URL == '' }}
-        run: |
-          echo "DATABASE_URL not set — skipping prisma migrate status/deploy."
-          echo "To enable full migration checks in CI, set the DATABASE_URL secret and re-run."
-
-  prisma-migration-test:
-    name: PR ephemeral PostgreSQL migration test
-    runs-on: ubuntu-latest
-    needs: build-matrix
-    if: ${{ github.event_name == 'pull_request' }}
+        node: [22, 24]
     services:
       postgres:
         image: postgres:15
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: tge_ci
-        ports:
-          - 5432:5432
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: tge_qa_ci
+        ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U postgres -d tge_ci" --health-interval 10s --health-timeout 5s --health-retries 5
+          --health-cmd "pg_isready -U postgres -d tge_qa_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # Disposable service credentials only; CI never connects to production.
+      DATABASE_URL: postgresql://postgres:ci-only-password@localhost:5432/tge_qa_ci?schema=public
+      TEST_DATABASE_URL: postgresql://postgres:ci-only-password@localhost:5432/tge_qa_ci?schema=public
+      JWT_SECRET: ci-only-signing-key-at-least-32-characters
+      CLIENT_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      RESEND_API_KEY: ci-placeholder-not-a-provider-key
+      EMAIL_FROM: ci@example.invalid
+      ACTIVATION_URL: http://localhost:3000/activate-account
+      NEXT_TELEMETRY_DISABLED: 1
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
         with:
-          node-version: 20
-
-      - name: Install dependencies (root)
-        run: npm ci
-
-      - name: Wait for Postgres
-        run: |
-          until pg_isready -h localhost -p 5432 -U postgres; do sleep 1; done
-
-      - name: Set DATABASE_URL and run migrations
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: |
+            database/package-lock.json
+            server/package-lock.json
+            client/package-lock.json
+      - name: Require SQL migrations for schema changes
+        if: github.event_name == 'pull_request'
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tge_ci?schema=public
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
         run: |
-          echo "DATABASE_URL=$DATABASE_URL"
-          export DATABASE_URL
-          npx prisma generate --schema=database/prisma/schema.prisma
-          npx prisma migrate deploy --schema=database/prisma/schema.prisma
-
-  security-scans:
-    name: Security and dependency scans
-    runs-on: ubuntu-latest
-    needs: build-matrix
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install client dependencies (for audit)
-        run: npm ci --prefix client
-
-      - name: Run npm audit for client (moderate)
-        run: npm audit --prefix client --audit-level=moderate || true
-
-      - name: Install server dependencies (for audit)
-        run: npm ci --prefix server
-
-      - name: Run npm audit for server (moderate)
-        run: npm audit --prefix server --audit-level=moderate || true
-
-  codeql-analysis:
-    name: CodeQL analysis
-    runs-on: ubuntu-latest
-    needs: [build-matrix]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: javascript
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-
-  vercel-preview:
-    name: Vercel preview deployment (optional)
-    runs-on: ubuntu-latest
-    needs: [build-matrix]
-    if: ${{ secrets.VERCEL_TOKEN != '' }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Vercel CLI
-        run: npm install -g vercel
-
-      - name: Deploy to Vercel (preview for PR)
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          echo "Deploying preview to Vercel for PR $GITHUB_REF"
-          # Use --prebuilt to deploy the build that was created earlier if desired.
-          # To target a specific Vercel project/org, set VERCEL_ORG_ID and VERCEL_PROJECT_ID secrets or use --scope/--project flags.
-          vercel --token "$VERCEL_TOKEN" --confirm --prebuilt || true
-
-  e2e-playwright:
-    name: Optional Playwright E2E (runs only if Playwright config exists)
-    runs-on: ubuntu-latest
-    needs: [build-matrix]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check for Playwright config
-        id: check_playwright
-        run: |
-          if [ -f client/playwright.config.ts ] || [ -f client/playwright.config.js ]; then
-            echo "playwright=true" >> $GITHUB_OUTPUT
-          else
-            echo "playwright=false" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          changed=$(git diff --name-only "$BASE_SHA"...HEAD)
+          if grep -Eq '^database/prisma/.*\.prisma$' <<< "$changed"; then
+            added=$(git diff --name-only --diff-filter=A "$BASE_SHA"...HEAD)
+            if ! grep -Eq '^database/prisma/migrations/[^/]+/migration\.sql$' <<< "$added"; then
+              echo "::error::Schema changes require a new reviewed SQL migration."
+              exit 1
+            fi
           fi
-
-      - name: Skip if Playwright not configured
-        if: ${{ steps.check_playwright.outputs.playwright == 'false' }}
+      - name: Install database dependencies
+        run: npm ci --prefix database
+      - name: Validate, generate and build database client
         run: |
-          echo "No Playwright config found in client/ — skipping E2E step."
-          exit 0
-
-      - name: Setup Node 20
-        if: ${{ steps.check_playwright.outputs.playwright == 'true' }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies and Playwright browsers
-        if: ${{ steps.check_playwright.outputs.playwright == 'true' }}
+          npm run db:validate --prefix database
+          npm run db:generate --prefix database
+          npm run db:build --prefix database
+      - name: Apply migrations to disposable PostgreSQL
         run: |
+          npm run db:migrate:deploy --prefix database
+          npm exec --prefix database -- prisma migrate status --config database/prisma7.config.ts
+      - name: Install server and client dependencies
+        run: |
+          npm ci --prefix server
           npm ci --prefix client
-          npx playwright install --with-deps
-
-      - name: Run Playwright tests
-        if: ${{ steps.check_playwright.outputs.playwright == 'true' }}
+      - name: Seed roles and permissions in disposable test database
+        working-directory: server
+        run: npm exec -- tsx scripts/seed-roles.ts
+      - name: Lint client
+        run: npm run lint --prefix client -- --max-warnings=0
+      - name: Typecheck and build server
         run: |
-          # Playwright will run projects configured in playwright.config.(ts|js): chromium, firefox, webkit (webkit ~ Safari, chromium covers Chrome/Edge)
-          npx playwright test --project=chromium --reporter=github || npx playwright test --project=firefox --reporter=github || npx playwright test --project=webkit --reporter=github
+          npm run typecheck --prefix server
+          npm run build --prefix server
+      - name: Run server, client and database integration tests
+        run: |
+          node --test server/scripts/run-tests.test.mjs
+          npm test --prefix server
+      - name: Test production error responses
+        run: node --test server/dist/common/middleware/error-handler.middleware.test.js
+      - name: Typecheck client
+        working-directory: client
+        run: |
+          npm exec -- next typegen
+          npm exec -- tsc --noEmit
+      - name: Build client
+        run: npm run build --prefix client
+
+  dependencies:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Block moderate or higher dependency vulnerabilities
+        run: |
+          npm audit --prefix database --audit-level=moderate
+          npm audit --prefix server --audit-level=moderate
+          npm audit --prefix client --audit-level=moderate
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          build-mode: none
+      - uses: github/codeql-action/analyze@v4
+
+  gate:
+    name: Release gate
+    if: always()
+    needs: [quality, dependencies, codeql]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all quality and security checks
+        env:
+          QUALITY: ${{ needs.quality.result }}
+          DEPENDENCIES: ${{ needs.dependencies.result }}
+          CODEQL: ${{ needs.codeql.result }}
+        run: |
+          test "$QUALITY" = success
+          test "$DEPENDENCIES" = success
+          test "$CODEQL" = success

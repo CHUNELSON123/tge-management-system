@@ -1,0 +1,4 @@
+CREATE TABLE "user_presence" (
+  "user_id" UUID PRIMARY KEY REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  "last_seen_at" TIMESTAMPTZ(6) NOT NULL
+);

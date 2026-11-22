@@ -1,0 +1,38 @@
+import { Router } from "express";
+import { z } from "zod";
+import { authenticate, type AuthenticatedRequest } from "../../../common/middleware/authenticate.middleware.js";
+import { requirePermission } from "../../../common/middleware/require-role.middleware.js";
+import type { ManagePaymentsUseCase } from "../application/manage-payments.usecase.js";
+
+const uuid = z.string().uuid();
+const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => { const date = new Date(`${value}T00:00:00Z`); return !Number.isNaN(date.valueOf()) && date.toISOString().slice(0, 10) === value; });
+const fee = z.object({ name: z.string().trim().min(1).max(200), category: z.enum(["membership", "programme", "event"]), audience: z.enum(["member", "guest", "all"]), amountMinor: z.number().int().min(0).max(100000000), currency: z.enum(["USD", "CAD", "EUR", "GBP"]), programmeId: uuid.nullable(), eventId: uuid.nullable(), active: z.boolean() }).strict().refine((value) => value.category === "membership" ? !value.programmeId && !value.eventId && value.audience === "member" : value.category === "programme" ? !!value.programmeId && !value.eventId : !!value.eventId && !value.programmeId);
+const charge = z.object({ feeId: uuid, memberId: uuid.nullable(), guestName: z.string().trim().min(1).max(200).nullable(), guestEmail: z.string().trim().email().max(255).transform(value => value.toLowerCase()).nullable(), periodKey: z.string().trim().min(1).max(100), dueDate: day.nullable() }).strict().refine((value) => value.memberId ? !value.guestName && !value.guestEmail : !!value.guestName && !!value.guestEmail);
+const manual = z.object({ chargeId: uuid, amountMinor: z.number().int().positive().max(100000000), method: z.enum(["cash", "bank_transfer", "other"]), reference: z.string().trim().min(1).max(120), paidAt: z.string().datetime({ offset: true }) }).strict();
+const simulation = z.object({ chargeId: uuid, amountMinor: z.number().int().positive().max(100000000), outcome: z.enum(["success", "pending", "failed"]), requestKey: uuid }).strict();
+
+export function createAdminPaymentsRouter(useCase: ManagePaymentsUseCase) {
+  const router = Router(); const protect = [authenticate, requirePermission("payments.manage")];
+  const fail = (error: unknown, res: import("express").Response, next: import("express").NextFunction) => {
+    const messages: Record<string, string> = { FEE_NOT_ACTIVE: "Choose an active fee.", FEE_NOT_FOUND: "Fee not found.", PROGRAMME_NOT_FOUND: "Programme not found.", EVENT_NOT_FOUND: "Event not found.", MEMBER_NOT_FOUND: "Member not found.", FEE_AUDIENCE_MISMATCH: "This fee does not apply to the selected payer.", CHARGE_NOT_FOUND: "Charge not found.", PAYMENT_NOT_FOUND: "Manual payment not found.", PAYMENT_ALREADY_VOIDED: "This manual payment has already been voided.", PAYMENT_EXCEEDS_BALANCE: "The payment exceeds the outstanding balance.", PAYMENT_DATE_FUTURE: "A manual payment date cannot be in the future." };
+    if (error instanceof Error && messages[error.message]) { res.status(error.message.endsWith("NOT_FOUND") ? 404 : 409).json({ message: messages[error.message] }); return; }
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") { res.status(409).json({ message: "This charge or payment reference already exists." }); return; } next(error);
+  };
+  router.get("/options", ...protect, async (_req, res, next) => { try { res.json({ data: await useCase.options() }); } catch (error) { next(error); } });
+  router.get("/fees", ...protect, async (_req, res, next) => { try { res.json({ data: await useCase.fees() }); } catch (error) { next(error); } });
+  router.post("/fees", ...protect, async (req: AuthenticatedRequest, res, next) => { const input = fee.safeParse(req.body); if (!input.success) { res.status(400).json({ message: "Fee details are invalid." }); return; } try { res.status(201).json({ data: await useCase.saveFee(null, input.data, req.authenticatedUser!.userId) }); } catch (error) { fail(error, res, next); } });
+  router.put("/fees/:id", ...protect, async (req: AuthenticatedRequest, res, next) => { const id = uuid.safeParse(req.params.id), input = fee.safeParse(req.body); if (!id.success || !input.success) { res.status(400).json({ message: "Fee details are invalid." }); return; } try { res.json({ data: await useCase.saveFee(id.data, input.data, req.authenticatedUser!.userId) }); } catch (error) { fail(error, res, next); } });
+  router.get("/charges", ...protect, async (req, res, next) => { const query = z.object({ memberId: uuid.optional() }).strict().safeParse(req.query); if (!query.success) { res.status(400).json({ message: "Charge filters are invalid." }); return; } try { res.json({ data: await useCase.charges(query.data.memberId) }); } catch (error) { next(error); } });
+  router.post("/charges", ...protect, async (req: AuthenticatedRequest, res, next) => { const input = charge.safeParse(req.body); if (!input.success) { res.status(400).json({ message: "Charge details are invalid." }); return; } try { res.status(201).json({ data: await useCase.createCharge(input.data, req.authenticatedUser!.userId) }); } catch (error) { fail(error, res, next); } });
+  router.post("/manual", ...protect, async (req: AuthenticatedRequest, res, next) => { const input = manual.safeParse(req.body); if (!input.success) { res.status(400).json({ message: "Manual payment details are invalid." }); return; } try { res.status(201).json({ data: await useCase.manual(input.data, req.authenticatedUser!.userId) }); } catch (error) { fail(error, res, next); } });
+  router.post("/manual/:id/void", ...protect, async (req: AuthenticatedRequest, res, next) => { const id = uuid.safeParse(req.params.id), input = z.object({ reason: z.string().trim().min(1).max(500) }).strict().safeParse(req.body); if (!id.success || !input.success) { res.status(400).json({ message: "A correction reason is required." }); return; } try { res.json({ message: "Manual payment voided; its history is retained.", data: await useCase.voidManual(id.data, input.data.reason, req.authenticatedUser!.userId) }); } catch (error) { fail(error, res, next); } });
+  return router;
+}
+
+export function createMemberPaymentsRouter(useCase: ManagePaymentsUseCase) {
+  const router = Router();
+  router.use(authenticate, (req: AuthenticatedRequest, res, next) => { if (req.authenticatedUser?.roleName !== "Member") { res.status(403).json({ message: "Member access is required." }); return; } next(); });
+  router.get("/charges", async (req: AuthenticatedRequest, res, next) => { try { res.json({ data: await useCase.own(req.authenticatedUser!.userId) }); } catch (error) { next(error); } });
+  router.post("/simulate", async (req: AuthenticatedRequest, res, next) => { const input = simulation.safeParse(req.body); if (!input.success) { res.status(400).json({ message: "Simulation details are invalid. Do not enter card details." }); return; } try { res.status(201).json({ message: "TEST ONLY: no payment was made.", data: await useCase.simulate(input.data, req.authenticatedUser!.userId) }); } catch (error) { if (error instanceof Error && ["CHARGE_NOT_FOUND", "PAYMENT_EXCEEDS_BALANCE", "REQUEST_KEY_CONFLICT"].includes(error.message)) { res.status(error.message === "CHARGE_NOT_FOUND" ? 404 : 409).json({ message: error.message === "CHARGE_NOT_FOUND" ? "Charge not found." : error.message === "REQUEST_KEY_CONFLICT" ? "This test request was already used with different details." : "The test amount exceeds the outstanding balance." }); return; } if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") { res.status(409).json({ message: "This test request was already used." }); return; } next(error); } });
+  return router;
+}

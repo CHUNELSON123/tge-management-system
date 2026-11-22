@@ -1,0 +1,31 @@
+import { GetMemberDashboardUseCase } from "./application/get-member-dashboard.usecase.js";
+import { PrismaMemberDashboardRepository } from "./infrastructure/prisma-member-dashboard.repository.js";
+import { GetMemberProfileUseCase } from "./application/get-member-profile.usecase.js";
+import { PrismaMemberProfileRepository } from "./infrastructure/prisma-member-profile.repository.js";
+import { MemberProfilePhotoUseCase } from "./application/member-profile-photo.usecase.js";
+import { PrismaMemberProfilePhotoRepository } from "./infrastructure/prisma-member-profile-photo.repository.js";
+import { createMemberPortalRouter } from "./presentation/member-portal.controller.js";
+import { GetMemberProgrammesUseCase } from "./application/get-member-programmes.usecase.js";
+import { PrismaMemberProgrammesRepository } from "./infrastructure/prisma-member-programmes.repository.js";
+import { GetMemberEventsUseCase } from "./application/get-member-events.usecase.js";
+import { PrismaMemberEventsRepository } from "./infrastructure/prisma-member-events.repository.js";
+import { GetMemberMentorshipUseCase } from "./application/get-member-mentorship.usecase.js";
+import { PrismaMemberMentorshipRepository } from "./infrastructure/prisma-member-mentorship.repository.js";
+import { GetMemberResourcesUseCase } from "./application/get-member-resources.usecase.js";
+import { PrismaMemberResourcesRepository } from "./infrastructure/prisma-member-resources.repository.js";
+import { GetMemberBusinessesUseCase } from "./application/get-member-businesses.usecase.js";
+import { PrismaMemberBusinessesRepository } from "./infrastructure/prisma-member-businesses.repository.js";
+
+const memberDashboardRepository = new PrismaMemberDashboardRepository();
+const getMemberDashboard = new GetMemberDashboardUseCase(memberDashboardRepository);
+const memberProfileRepository = new PrismaMemberProfileRepository();
+const getMemberProfile = new GetMemberProfileUseCase(memberProfileRepository);
+const memberProfilePhotoRepository = new PrismaMemberProfilePhotoRepository();
+const memberProfilePhoto = new MemberProfilePhotoUseCase(memberProfilePhotoRepository);
+const memberProgrammes = new GetMemberProgrammesUseCase(new PrismaMemberProgrammesRepository());
+const memberEvents = new GetMemberEventsUseCase(new PrismaMemberEventsRepository());
+const memberMentorship = new GetMemberMentorshipUseCase(new PrismaMemberMentorshipRepository());
+const memberResources = new GetMemberResourcesUseCase(new PrismaMemberResourcesRepository());
+const memberBusinesses = new GetMemberBusinessesUseCase(new PrismaMemberBusinessesRepository());
+
+export const memberPortalRouter = createMemberPortalRouter(getMemberDashboard, getMemberProfile, memberProfilePhoto, memberProgrammes, memberEvents, memberMentorship, memberResources, memberBusinesses);
