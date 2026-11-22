@@ -14,10 +14,12 @@ if (envResult.error && (envResult.error as NodeJS.ErrnoException).code !== "ENOE
 }
 
 const { createApp } = await import("./app.module.js");
+const { startCallExpiry } = await import("./modules/member-portal/member-messages.module.js");
 
 const port = Number(process.env.PORT) || 4000;
 const app = createApp();
 
 app.listen(port, () => {
+  startCallExpiry();
   console.log(`TGE API listening on port ${port}`);
 });

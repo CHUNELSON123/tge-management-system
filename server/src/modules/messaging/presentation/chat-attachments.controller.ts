@@ -10,8 +10,9 @@ export function createChatAttachmentsRouter(useCase: ChatAttachmentsUseCase) {
     const actor = req.authenticatedUser; const id = String(req.params.conversationId);
     if (!actor || !["Member", "Mentor", "System Administrator", "Organisation Administrator"].includes(actor.roleName)) { res.status(403).json({ message: "Messaging access is required." }); return; }
     let filename = ""; try { filename = decodeURIComponent(String(req.headers["x-file-name"] || "")); } catch { /* Invalid filename. */ }
-    if (!uuid.test(id) || !Buffer.isBuffer(req.body) || !req.body.length || !filename || filename.length > 200 || /[\\/\x00-\x1f\x7f]/.test(filename) || !extensions.test(filename)) { res.status(400).json({ message: "Choose a document (PDF, Office, TXT or CSV) up to 10 MB." }); return; }
-    try { const message = await useCase.upload(actor.userId, id, filename, req.body); if (!message) { res.status(404).json({ message: "Conversation not found." }); return; } res.status(201).json({ data: message }); }
+    const bytes = req.body;
+    if (!uuid.test(id) || Array.isArray(bytes) || !Buffer.isBuffer(bytes) || !bytes.length || !filename || filename.length > 200 || /[\\/\x00-\x1f\x7f]/.test(filename) || !extensions.test(filename)) { res.status(400).json({ message: "Choose a document (PDF, Office, TXT or CSV) up to 10 MB." }); return; }
+    try { const message = await useCase.upload(actor.userId, id, filename, bytes); if (!message) { res.status(404).json({ message: "Conversation not found." }); return; } res.status(201).json({ data: message }); }
     catch { res.status(503).json({ message: "Document could not be uploaded." }); }
   });
   router.get("/attachments/:attachmentId", authenticate, async (req: AuthenticatedRequest, res) => {

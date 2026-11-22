@@ -274,12 +274,13 @@ export function createMemberPortalRouter(
     if (!actor) { res.status(401).json({ message: "Authentication required." }); return; }
     if (actor.roleName !== "Member") { res.status(403).json({ message: "Member access is required." }); return; }
     const contentType = req.headers["content-type"]?.split(";")[0]?.trim().toLowerCase();
-    if (!contentType || !allowedProfilePhotoTypes.includes(contentType as (typeof allowedProfilePhotoTypes)[number]) || !Buffer.isBuffer(req.body) || req.body.length === 0 || req.body.length > 2 * 1024 * 1024 || !matchesImageType(contentType, req.body)) {
+    const photo = req.body;
+    if (!contentType || !allowedProfilePhotoTypes.includes(contentType as (typeof allowedProfilePhotoTypes)[number]) || Array.isArray(photo) || !Buffer.isBuffer(photo) || photo.length === 0 || photo.length > 2 * 1024 * 1024 || !matchesImageType(contentType, photo)) {
       res.status(400).json({ message: "Choose a JPG or PNG image up to 2 MB." });
       return;
     }
     try {
-      await memberProfilePhoto.save(actor.userId, { contentType, data: req.body });
+      await memberProfilePhoto.save(actor.userId, { contentType, data: photo });
       res.status(200).json({ message: "Profile photo saved." });
     } catch {
       res.status(503).json({ message: "Profile photo could not be saved right now." });

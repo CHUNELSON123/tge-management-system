@@ -12,7 +12,7 @@ export function createMentorResourcesRouter(useCase: UploadMentorResourceUseCase
   router.post("/resources/upload", raw({ type: "application/octet-stream", limit: "50mb" }), async (req: AuthenticatedRequest, res, next) => {
     const input = meta.safeParse(req.query); let filename = ""; try { filename = decodeURIComponent(String(req.header("x-file-name") ?? "")).replace(/[\\/\r\n\0]/g, "_").slice(0, 255); } catch { /* invalid encoding */ }
     const extension = extname(filename).toLowerCase(), mime = types[extension], bytes = req.body;
-    if (!input.success || !mime || !Buffer.isBuffer(bytes) || !bytes.length || !signature(extension, bytes)) { res.status(400).json({ message: "Choose a valid file, category and assigned programme or cohort." }); return; }
+    if (!input.success || !mime || Array.isArray(bytes) || !Buffer.isBuffer(bytes) || !bytes.length || !signature(extension, bytes)) { res.status(400).json({ message: "Choose a valid file, category and assigned programme or cohort." }); return; }
     try { const data = await useCase.execute(req.authenticatedUser!.userId, { ...input.data, filename, mimeType: mime, content: bytes }); res.status(201).json({ message: "Resource shared.", data }); }
     catch (error) { if (error instanceof Error && error.message === "RESOURCE_TARGET_INVALID") { res.status(403).json({ message: "Choose a valid category and a programme or cohort assigned to you." }); return; } next(error); }
   });

@@ -78,7 +78,7 @@ export function createAdminResourcesRouter(useCase:ManageAdminResourcesUseCase):
     const bytes=req.body;
     if(!id.success){res.status(404).json({message:"Resource was not found."});return;}
     if(!actor){res.status(401).json({message:"Authentication required."});return;}
-    if(!Buffer.isBuffer(bytes)||bytes.length===0||bytes.length>maxFileSize||!allowedExtensions.has(extension)||mime!==expectedMime[extension]||!signatureOk(extension,bytes)){
+    if(Array.isArray(bytes)||!Buffer.isBuffer(bytes)||bytes.length===0||bytes.length>maxFileSize||!allowedExtensions.has(extension)||mime!==expectedMime[extension]||!signatureOk(extension,bytes)){
       res.status(400).json({message:"Choose a valid PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, PNG, JPG, or MP4 file up to 50 MB."});return;
     }
     try{if(!await useCase.get(id.data)){res.status(404).json({message:"Resource was not found."});return;}const result=await useCase.addVersion(id.data,actor,{originalFilename:filename,mimeType:mime,content:bytes});res.status(201).json({message:"Resource file uploaded as a new version.",data:result});}catch(error){resourceError(error,res,next);}

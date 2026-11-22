@@ -43,9 +43,10 @@ export function createAdminMembersRouter(useCase: GetAdminMembersUseCase, regist
     const contentType = req.headers["content-type"]?.split(";")[0]?.trim().toLowerCase();
     if (!parsedId.success) { res.status(404).json({ message: "Member was not found." }); return; }
     if (!actorUserId) { res.status(401).json({ message: "Authentication required." }); return; }
-    if (!Buffer.isBuffer(req.body) || !validPhoto(contentType, req.body)) { res.status(400).json({ message: "Choose a JPG or PNG image up to 2 MB." }); return; }
+    const photo = req.body;
+    if (Array.isArray(photo) || !Buffer.isBuffer(photo) || !validPhoto(contentType, photo)) { res.status(400).json({ message: "Choose a JPG or PNG image up to 2 MB." }); return; }
     try {
-      if (!await useCase.saveProfilePhoto(parsedId.data, actorUserId, contentType!, req.body)) { res.status(404).json({ message: "Member was not found." }); return; }
+      if (!await useCase.saveProfilePhoto(parsedId.data, actorUserId, contentType!, photo)) { res.status(404).json({ message: "Member was not found." }); return; }
       res.status(200).json({ message: "Member profile photo saved." });
     } catch (error) { next(error); }
   });

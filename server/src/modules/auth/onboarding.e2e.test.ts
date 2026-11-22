@@ -63,11 +63,12 @@ test("membership and invited accounts complete onboarding with recoverable email
     const token = new URL(url).searchParams.get("token"); assert.ok(token); return token;
   };
   const person = (name: string) => ({ firstName: "Test", lastName: name, email: email(name) });
+  const application = (name: string) => ({ ...person(name), phone: "+14185551234", location: "Quebec City, Canada", dateOfBirth: "1990-01-01", gender: "Prefer not to say", nationality: "Canada", bio: "Interested in sustainable entrepreneurship." });
   try {
     const login = await post("/auth/login", { email: admin.email, password: "test-password" }); assert.equal(login.status, 200);
     accessToken = ((await login.json()) as { data: { accessToken: string } }).data.accessToken;
-    assert.equal((await post("/applications", person("applicant"))).status, 201);
-    assert.equal((await post("/applications", person("applicant"))).status, 201);
+    assert.equal((await post("/applications", application("applicant"))).status, 201);
+    assert.equal((await post("/applications", application("applicant"))).status, 201);
     const applications = await prisma.membershipApplication.findMany({ where: { applicantEmail: email("applicant") } });
     assert.equal(applications.length, 1); assert.equal(applications[0].status, "PENDING");
     assert.equal(await prisma.user.count({ where: { email: email("applicant") } }), 0);
@@ -82,11 +83,11 @@ test("membership and invited accounts complete onboarding with recoverable email
     assert.equal((await post("/applications/activate", { token, password: "test-password" })).status, 400);
     assert.equal((await post("/auth/login", { email: member.email, password: "test-password" })).status, 200);
     assert.equal((await post(`/admin/members/applications/${applications[0].id}/approve`, {}, true)).status, 409);
-    assert.equal((await post("/applications", person("rejected"))).status, 201);
+    assert.equal((await post("/applications", application("rejected"))).status, 201);
     const rejected = await prisma.membershipApplication.findFirstOrThrow({ where: { applicantEmail: email("rejected") } });
     assert.equal((await post(`/admin/members/applications/${rejected.id}/reject`, { reason: "Please update your information" }, true)).status, 200);
     assert.equal(await prisma.user.count({ where: { email: email("rejected") } }), 0);
-    assert.equal((await post("/applications", person("rejected"))).status, 201);
+    assert.equal((await post("/applications", application("rejected"))).status, 201);
     assert.equal(await prisma.membershipApplication.count({ where: { applicantEmail: email("rejected") } }), 2);
     failMail = true;
     assert.equal((await post("/admin/members", person("direct"), true)).status, 400);

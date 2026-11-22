@@ -33,7 +33,7 @@ testFiles.sort();
 if (testFiles.length === 0) throw new Error("No test files found.");
 
 const result = spawnSync(process.execPath, [
-  fileURLToPath(import.meta.resolve("tsx/cli")), "--test", ...testFiles,
+  fileURLToPath(import.meta.resolve("tsx/cli")), "--test", "--test-concurrency=1", ...testFiles,
 ], {
   cwd: serverDirectory,
   stdio: "inherit",

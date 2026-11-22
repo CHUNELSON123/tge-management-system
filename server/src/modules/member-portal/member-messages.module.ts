@@ -10,8 +10,18 @@ const useCase = new GetMemberMessagesUseCase(repository);
 const history = new PrismaCallHistoryRepository();
 const signaling = new MemberCallSignalingService(repository, history);
 const expireCalls = () => void history.expire().catch((error) => console.error("Could not update missed calls", error));
-expireCalls();
-setInterval(expireCalls, 5_000).unref();
+let expiryTimer: ReturnType<typeof setInterval> | undefined;
+export function startCallExpiry() {
+  if (expiryTimer) return;
+  expireCalls();
+  expiryTimer = setInterval(expireCalls, 5_000);
+  expiryTimer.unref();
+}
+export function stopCallExpiry() {
+  if (!expiryTimer) return;
+  clearInterval(expiryTimer);
+  expiryTimer = undefined;
+}
 const presence = new MemberPresenceService(new PrismaMemberPresenceRepository());
 export const memberMessagesRouter = createMemberMessagesRouter(useCase, signaling, ["Member"], presence);
 export const sharedMessagesRouter = createMemberMessagesRouter(useCase, signaling, ["Member", "Mentor", "System Administrator", "Organisation Administrator"], presence);
