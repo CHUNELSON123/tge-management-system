@@ -5,8 +5,7 @@ import type { MemberResourceFileContent, MemberResourceFileStorage } from "../do
 
 export class LocalMemberResourceFileStorage implements MemberResourceFileStorage {
   async open(storageKey: string): Promise<MemberResourceFileContent> {
-    const configuredRoot = process.env.RESOURCE_STORAGE_ROOT?.trim();
-    if (!configuredRoot) throw new Error("Resource file storage is not configured.");
+    const configuredRoot = process.env.RESOURCE_STORAGE_ROOT?.trim() || "./storage/resources";
     const key = storageKey.replaceAll("\\", "/");
     if (!key || key.startsWith("/") || isAbsolute(key) || key.split("/").some((part) => part === ".." || part === ".")) {
       throw new Error("Resource file key is invalid.");

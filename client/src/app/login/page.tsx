@@ -61,6 +61,7 @@ export default function LoginPage() {
           <h2 className="text-xl font-bold">{t("signIn")}</h2>
           <p className="mt-1 text-xs text-[#5F6662]">{t("enterCredentials")}</p>
           <div className="mt-4"><LoginForm /></div>
+          <p className="mt-5 text-center text-xs text-[#5F6662]"><Link href="/admin/login" className="font-semibold text-[#006B3B] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A]">{t("adminPortalSignInLink")}</Link></p>
         </div>
 
         <div className="rounded-xl bg-[#E8F5EE] p-5 md:hidden">

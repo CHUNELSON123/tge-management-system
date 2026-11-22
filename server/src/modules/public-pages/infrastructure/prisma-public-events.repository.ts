@@ -5,33 +5,39 @@ import type { PublicEventRecord, PublicEventsRepository } from "../application/g
 const publicEventFields = {
   id: true,
   title: true,
+  shortDescription: true,
   eventType: true,
   description: true,
   startAt: true,
   endAt: true,
   timezone: true,
   venue: true,
+  registrationRequired: true,
 } as const;
 
 function toPublicEventRecord(event: {
   id: string;
   title: string;
+  shortDescription: string | null;
   eventType: string;
   description: string | null;
   startAt: Date;
   endAt: Date | null;
   timezone: string | null;
   venue: string | null;
+  registrationRequired: boolean;
 }): PublicEventRecord {
   return {
     id: event.id,
     title: event.title,
+    shortDescription: event.shortDescription,
     eventType: event.eventType,
     description: event.description,
     startAt: event.startAt.toISOString(),
     endAt: event.endAt?.toISOString() ?? null,
     timezone: event.timezone,
     venue: event.venue,
+    registrationRequired: event.registrationRequired,
   };
 }
 

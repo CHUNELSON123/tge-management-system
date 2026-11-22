@@ -1,5 +1,5 @@
 export interface ContactEnquiryInput { name: string; email: string; subject: string; message: string; consent: true; }
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 export class ContactEnquiryError extends Error {
   constructor(public readonly kind: "validation" | "rate-limit" | "unavailable") { super(kind); this.name = "ContactEnquiryError"; }
 }

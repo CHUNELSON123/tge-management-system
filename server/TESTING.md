@@ -6,6 +6,8 @@ For step-by-step PowerShell, API, SQL, and browser instructions for AUTH-01 thro
 
 `npm test` runs all `.test.ts` files under the server and client source trees, including the database-backed authentication lifecycle. It creates and deletes database records. Use a disposable PostgreSQL database, never a shared development or production target.
 
+Test files run one at a time because the integration tests share the same disposable database and create and delete users that other tests may query. After migrations, seed the standard roles and permissions with `npm exec -- tsx scripts/seed-roles.ts` from `server/` before running the suite. CI performs this seed automatically.
+
 The runner requires `TEST_DATABASE_URL` with a localhost/loopback host and a database named `tge_qa_<suffix>`. It accepts no connection query overrides; only the optional `?schema=public` suffix is allowed. It overrides `DATABASE_URL` for the test process and generates a temporary JWT signing key. Local `.env` files cannot override those process values.
 
 1. Create a disposable PostgreSQL database and confirm its host and name.

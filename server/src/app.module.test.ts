@@ -17,6 +17,9 @@ test('the application limits all API routes before authentication and parsing, i
     }
   }
   const { createApp } = await import('./app.module.js');
+  // Close the shared Prisma pool if a route opens it during the test.
+  const { prisma } = await import('database');
+  t.after(async () => { await prisma.$disconnect(); });
   const app = createApp();
   app.post('/api/future-route', (_req, res) => res.json({ ok: true }));
   app.get('/status', (_req, res) => res.json({ ok: true }));

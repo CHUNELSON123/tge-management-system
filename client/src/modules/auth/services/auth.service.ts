@@ -10,7 +10,11 @@ import type {
 } from "../types/auth.types";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
+export class AuthRequestError extends Error {
+  constructor(message: string, readonly status: number) { super(message); this.name = "AuthRequestError"; }
+}
 
 async function parseResponse<T>(
   response: Response,
@@ -21,7 +25,7 @@ async function parseResponse<T>(
   try {
     data = await response.json();
   } catch {
-    throw new Error(fallbackMessage);
+    throw new AuthRequestError(fallbackMessage, response.status);
   }
 
   if (
@@ -30,11 +34,11 @@ async function parseResponse<T>(
     !("message" in data) ||
     typeof data.message !== "string"
   ) {
-    throw new Error(fallbackMessage);
+    throw new AuthRequestError(fallbackMessage, response.status);
   }
 
   if (!response.ok) {
-    throw new Error(data.message || fallbackMessage);
+    throw new AuthRequestError(data.message || fallbackMessage, response.status);
   }
 
   return data as T;

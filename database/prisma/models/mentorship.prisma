@@ -8,6 +8,7 @@ model MentorAssignment {
   startDate   DateTime  @map("start_date") @db.Date
   endDate     DateTime? @map("end_date") @db.Date
   status      String    @default("active") @db.VarChar(50)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
   notes       String?   @db.Text
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
@@ -16,11 +17,31 @@ model MentorAssignment {
   programme  Programme?           @relation(fields: [programmeId], references: [id], onDelete: SetNull)
   sessions   MentoringSession[]
   objectives MentoringObjective[]
+  reports    MentorshipQuarterlyReport[]
 
   @@index([mentorId])
   @@index([memberId])
   @@index([programmeId])
   @@map("mentor_assignments")
+}
+
+model MentorshipQuarterlyReport {
+  id String @id @default(uuid()) @db.Uuid
+  assignmentId String @map("assignment_id") @db.Uuid
+  year Int
+  quarter Int
+  summary String @db.Text
+  achievements String @db.Text
+  challenges String @db.Text
+  nextSteps String @map("next_steps") @db.Text
+  authoredByUserId String @map("authored_by_user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  assignment MentorAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  author User @relation("MentorshipReportAuthor", fields: [authoredByUserId], references: [id], onDelete: Restrict)
+  @@unique([assignmentId, year, quarter])
+  @@index([authoredByUserId])
+  @@map("mentorship_quarterly_reports")
 }
 
 model MentoringSession {

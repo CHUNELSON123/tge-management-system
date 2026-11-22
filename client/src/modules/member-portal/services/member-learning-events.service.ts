@@ -8,7 +8,7 @@ export class MemberLearningEventsRequestError extends Error {
   }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 async function getData<T>(path: string, accessToken: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
@@ -25,6 +25,11 @@ async function getData<T>(path: string, accessToken: string, signal?: AbortSigna
 }
 
 export const memberLearningEventsService = {
+  async changeRegistration(accessToken: string, eventId: string, cancel: boolean) {
+    const response = await fetch(`${API_URL}/api/member/events/${encodeURIComponent(eventId)}/${cancel ? "cancel-registration" : "registrations"}`, { method: "POST", headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" }, body: JSON.stringify(cancel ? {} : { consent: true }) });
+    const body = await response.json().catch(() => null) as { message?: string } | null;
+    if (!response.ok) throw new MemberLearningEventsRequestError(body?.message || "Registration could not be updated.", response.status);
+  },
   async getProgrammes(accessToken: string, signal?: AbortSignal) {
     const data = await getData<unknown>("/api/member/programmes", accessToken, signal);
     if (!Array.isArray(data)) throw new MemberLearningEventsRequestError("Programme response is invalid.", 502);
@@ -33,6 +38,7 @@ export const memberLearningEventsService = {
       (typeof item.description === "string" || item.description === null) &&
       (typeof item.startDate === "string" || item.startDate === null) &&
       (typeof item.endDate === "string" || item.endDate === null) &&
+      (typeof item.cohortId === "string" || item.cohortId === null) &&
       (typeof item.cohortName === "string" || item.cohortName === null) &&
       (typeof item.enrollmentStatus === "string" || item.enrollmentStatus === null) &&
       (typeof item.enrolledAt === "string" || item.enrolledAt === null));

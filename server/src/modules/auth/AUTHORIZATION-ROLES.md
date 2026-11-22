@@ -4,9 +4,9 @@ Protected API requests require a valid Bearer JWT and an active, non-deleted acc
 
 | Role | Seeded permission set |
 | --- | --- |
-| System Administrator | User and role management, system management, audit viewing, member, programme, event, resource, mentorship, reporting, and website management |
-| Organisation Administrator | User, member, programme, event, resource, mentorship, report, and website management |
-| Member | Own profile management; read resources, events, and mentorship information |
+| System Administrator | User and role management, system management, audit viewing, member, programme, event, resource, mentorship, business directory review, reporting, and website management |
+| Organisation Administrator | User, member, programme, event, resource, mentorship, business directory review, report, and website management |
+| Member | Own profile and business listing management; read resources, events, and mentorship information |
 | Mentor | Read assigned members; manage assigned mentorship and resources; read events |
 | Trainer / Facilitator | Read assigned members; deliver programmes; manage resources; read events |
 

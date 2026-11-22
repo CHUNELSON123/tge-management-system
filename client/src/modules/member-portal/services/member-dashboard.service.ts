@@ -44,7 +44,7 @@ export class MemberDashboardRequestError extends Error {
   }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export const memberDashboardService = {
   async getDashboard(accessToken: string, signal?: AbortSignal): Promise<MemberDashboard> {

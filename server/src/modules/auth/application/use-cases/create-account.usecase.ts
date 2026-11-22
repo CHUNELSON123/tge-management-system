@@ -20,7 +20,8 @@ export interface CreateAccountActor {
 
 export interface CreateAccountResult {
   user: User;
-  activationExpiresAt: Date;
+  activationExpiresAt: Date | null;
+  invitationSent: boolean;
 }
 
 const allowedRoles: Record<string, string[]> = {
@@ -66,6 +67,9 @@ export class CreateAccountUseCase {
     if (!roleName || !permittedRoles.includes(roleName)) {
       throw new Error("ROLE_ASSIGNMENT_FORBIDDEN");
     }
+    const activationBaseUrl = process.env.ACTIVATION_URL;
+    if (!activationBaseUrl) throw new Error("ACTIVATION_URL is not configured.");
+    const activationUrl = new URL(activationBaseUrl);
 
     const passwordHash = await bcrypt.hash(
       randomBytes(32).toString("hex"),
@@ -96,32 +100,25 @@ export class CreateAccountUseCase {
       throw error;
     }
 
-    const activation = await this.createActivationToken.execute(user.id);
-    const activationBaseUrl = process.env.ACTIVATION_URL;
-
-    if (!activationBaseUrl) {
-      throw new Error("ACTIVATION_URL is not configured.");
-    }
-
-    const activationUrl = new URL(activationBaseUrl);
-    activationUrl.searchParams.set("token", activation.token);
-
-    await this.emailService.sendEmail({
+    try {
+      const activation = await this.createActivationToken.execute(user.id);
+      activationUrl.searchParams.set("token", activation.token);
+      const safeFirstName = user.firstName.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character] ?? character);
+      await this.emailService.sendEmail({
       to: email,
       subject: "Activate your TGE account",
       html: `
-        <h2>Welcome to TGE, ${user.firstName}!</h2>
+        <h2>Welcome to TGE, ${safeFirstName}!</h2>
         <p>An account has been created for you.</p>
         <p>Click the link below to activate your account and set your password.</p>
         <p><a href="${activationUrl.toString()}">Activate my account</a></p>
         <p>This link expires in 24 hours and can only be used once.</p>
         <p>If you did not expect this invitation, please ignore this email.</p>
       `,
-    });
-
-    return {
-      user,
-      activationExpiresAt: activation.expiresAt,
-    };
+      });
+      return { user, activationExpiresAt: activation.expiresAt, invitationSent: true };
+    } catch {
+      return { user, activationExpiresAt: null, invitationSent: false };
+    }
   }
 }

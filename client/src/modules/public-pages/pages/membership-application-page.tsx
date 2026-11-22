@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { BookOpen, CheckCircle2, Mail, Phone, ShieldCheck, UserRound, UsersRound, CalendarDays, ChartNoAxesCombined } from "lucide-react";
@@ -8,7 +8,9 @@ import { useLanguage } from "@/modules/i18n/language-provider";
 import { membershipApplicationService, MembershipApplicationRequestError } from "../services/membership-application.service";
 
 export default function MembershipApplicationPage() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const [countries, setCountries] = useState<string[]>([]); const [timezones, setTimezones] = useState<string[]>([]);
+  useEffect(() => { const names = new Intl.DisplayNames(["en"], { type: "region" }); const entries: string[] = []; for (let a = 65; a <= 90; a++) for (let b = 65; b <= 90; b++) { const code = String.fromCharCode(a, b); const name = names.of(code); if (name && name !== code) entries.push(name); } const timer = requestAnimationFrame(() => { setCountries([...new Set(entries)].sort()); setTimezones(Intl.supportedValuesOf("timeZone")); }); return () => cancelAnimationFrame(timer); }, []);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [failure, setFailure] = useState<"validation" | "unavailable" | null>(null);
@@ -17,16 +19,15 @@ export default function MembershipApplicationPage() {
     event.preventDefault();
     if (submitting) return;
     const form = new FormData(event.currentTarget);
-    const fullName = String(form.get("fullName") || "").trim().split(/\s+/);
-    const lastName = fullName.length > 1 ? fullName.pop()! : "";
     setFailure(null);
     setSubmitting(true);
     try {
       await membershipApplicationService.submit({
-        firstName: fullName.join(" "),
-        lastName,
+        firstName: String(form.get("firstName") || "").trim(),
+        lastName: String(form.get("lastName") || "").trim(),
         email: String(form.get("email") || "").trim(),
         phone: String(form.get("phone") || "").trim(),
+        location: String(form.get("location") || "").trim(), dateOfBirth: String(form.get("dateOfBirth") || ""), gender: String(form.get("gender") || ""), nationality: String(form.get("nationality") || ""), preferredLanguage: String(form.get("preferredLanguage") || "") || null, timezone: String(form.get("timezone") || "") || null, bio: String(form.get("bio") || "").trim(),
       });
       setSubmitted(true);
     } catch (error: unknown) {
@@ -63,9 +64,16 @@ export default function MembershipApplicationPage() {
             <fieldset disabled={submitting} className="space-y-5 disabled:opacity-70">
               <legend className="sr-only">{t("membershipApplicationFormTitle")}</legend>
               <div className="grid gap-5 sm:grid-cols-2">
-                <label className="block text-sm font-semibold" htmlFor="app-full-name">{t("membershipApplicationFullName")} <span aria-hidden="true">*</span><span className="relative block"><UserRound aria-hidden="true" size={17} className="pointer-events-none absolute left-3 top-[19px] text-[#727D76]"/><input id="app-full-name" name="fullName" required minLength={3} maxLength={200} pattern="\S+\s+\S+.*" autoComplete="name" placeholder={t("membershipApplicationFullNamePlaceholder")} className={inputClass}/></span></label>
+                <label className="block text-sm font-semibold">{t("adminFirstName")} *<input name="firstName" required maxLength={100} autoComplete="given-name" className={`${inputClass} !pl-3`}/></label><label className="block text-sm font-semibold">{t("adminLastName")} *<input name="lastName" required maxLength={100} autoComplete="family-name" className={`${inputClass} !pl-3`}/></label>
                 <label className="block text-sm font-semibold" htmlFor="app-email">{t("emailAddress")} <span aria-hidden="true">*</span><span className="relative block"><Mail aria-hidden="true" size={17} className="pointer-events-none absolute left-3 top-[19px] text-[#727D76]"/><input id="app-email" name="email" type="email" required maxLength={255} autoComplete="email" placeholder={t("membershipApplicationEmailPlaceholder")} className={inputClass}/></span></label>
-                <label className="block text-sm font-semibold sm:col-span-2" htmlFor="app-phone">{t("membershipApplicationPhone")}<span className="relative block"><Phone aria-hidden="true" size={17} className="pointer-events-none absolute left-3 top-[19px] text-[#727D76]"/><input id="app-phone" name="phone" type="tel" maxLength={30} autoComplete="tel" placeholder={t("membershipApplicationPhonePlaceholder")} className={inputClass}/></span></label>
+                <label className="block text-sm font-semibold" htmlFor="app-phone">{t("membershipApplicationPhone")} *<span className="relative block"><Phone aria-hidden="true" size={17} className="pointer-events-none absolute left-3 top-[19px] text-[#727D76]"/><input id="app-phone" name="phone" type="tel" required maxLength={30} autoComplete="tel" placeholder={t("membershipApplicationPhonePlaceholder")} className={inputClass}/></span></label>
+                <label className="block text-sm font-semibold">{t("adminDateOfBirth")} *<input type="date" name="dateOfBirth" required max={new Date().toISOString().slice(0,10)} className={`${inputClass} !pl-3`}/></label>
+                <label className="block text-sm font-semibold">{t("adminGender")} *<select name="gender" required defaultValue="" className={`${inputClass} !pl-3`}><option value="">{locale === "fr" ? "Choisir" : "Select"}</option>{["Woman", "Man", "Non-binary", "Prefer not to say", "Self-describe"].map((value) => <option key={value}>{value}</option>)}</select></label>
+                <label className="block text-sm font-semibold">{t("adminNationality")} *<select name="nationality" required defaultValue="" className={`${inputClass} !pl-3`}><option value="">{locale === "fr" ? "Choisir" : "Select"}</option>{countries.map((country) => <option key={country}>{country}</option>)}</select></label>
+                <label className="block text-sm font-semibold">{t("adminLocation")} *<input name="location" required maxLength={255} list="application-location-suggestions" className={`${inputClass} !pl-3`}/><datalist id="application-location-suggestions">{[...new Set([...countries, ...timezones.map((zone) => zone.split("/").slice(1).join(", ").replaceAll("_", " ")).filter(Boolean)])].map((place) => <option key={place} value={place}/>)}</datalist></label>
+                <label className="block text-sm font-semibold">{t("adminPreferredLanguage")}<select name="preferredLanguage" className={`${inputClass} !pl-3`} defaultValue=""><option value="">{t("adminNotRecorded")}</option><option value="en">English</option><option value="fr">Français</option></select></label>
+                <label className="block text-sm font-semibold">{t("adminTimezone")}<select name="timezone" className={`${inputClass} !pl-3`} defaultValue=""><option value="">{t("adminNotRecorded")}</option>{timezones.map((zone) => <option key={zone}>{zone}</option>)}</select></label>
+                <label className="block text-sm font-semibold sm:col-span-2">{t("adminBiography")} *<span className="mt-1 block text-xs font-normal text-slate-600">{locale === "fr" ? "Présentez brièvement votre parcours, vos intérêts et vos objectifs." : "Briefly describe your background, business interests and goals."}</span><textarea name="bio" required maxLength={250} rows={4} className={`${inputClass} !pl-3`}/></label>
               </div>
               <label className="flex items-start gap-2 text-xs leading-6 text-[#48574E]"><input type="checkbox" name="acknowledgement" required className="mt-1 h-4 w-4 shrink-0 accent-[#087B49]"/><span>{t("membershipApplicationAcknowledgement")}</span></label>
             </fieldset>

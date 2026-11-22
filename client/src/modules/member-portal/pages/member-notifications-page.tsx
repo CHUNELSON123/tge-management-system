@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Bell, CalendarDays, CheckCheck, Megaphone, MessageSquare, Settings2, UsersRound } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useLanguage } from "@/modules/i18n/language-provider";
@@ -8,6 +9,8 @@ import { useMemberNotifications } from "../hooks/use-member-notifications";
 
 export function MemberNotificationsPage() {
   const { locale, t } = useLanguage();
+  const pathname = usePathname();
+  const router = useRouter();
   const { notifications, loading, failed, actionFailed, markRead, markAllRead, retry } = useMemberNotifications();
   const [category, setCategory] = useState("all");
   const isFrench = locale === "fr";
@@ -52,7 +55,7 @@ export function MemberNotificationsPage() {
             return <li key={notification.id} className={`rounded-xl border p-4 ${style.card}`}><div className="flex gap-3">
               <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/80 ${style.iconColor}`}><NotificationIcon aria-hidden="true" size={20}/></span>
               <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="font-bold text-[#17211B]">{notification.title}</h2><div className="flex shrink-0 items-center gap-2">{!notification.readAt && <span className="h-2 w-2 rounded-full bg-[#078347]" aria-label={text.unread}/>}<time className="text-xs text-[#68736C]">{date(notification.createdAt)}</time></div></div>
-                <p className="mt-1 whitespace-pre-wrap text-sm leading-5 text-[#59645D]">{notification.body}</p>{!notification.readAt && <button type="button" onClick={() => void markRead(notification.id)} className="mt-3 text-xs font-semibold text-[#087443] hover:underline">{text.markRead}</button>}
+                <p className="mt-1 whitespace-pre-wrap text-sm leading-5 text-[#59645D]">{notification.body}</p>{notification.conversationId && <button type="button" onClick={() => { if (!notification.readAt) void markRead(notification.id); router.push(`${pathname.startsWith("/mentor") ? "/mentor/messages" : pathname.startsWith("/admin") ? "/admin/messages" : "/portal/messages"}?conversation=${encodeURIComponent(notification.conversationId!)}`); }} className="mt-3 mr-4 text-xs font-semibold text-[#087443] hover:underline">{isFrench ? "Ouvrir la conversation" : "Open conversation"}</button>}{!notification.readAt && <button type="button" onClick={() => void markRead(notification.id)} className="mt-3 text-xs font-semibold text-[#087443] hover:underline">{text.markRead}</button>}
               </div>
             </div></li>;
           })}</ul> : <p className="rounded-xl border border-dashed border-[#CBD8CE] p-6 text-sm text-[#59645D]">{notifications.length ? text.noCategory : text.empty}</p>}

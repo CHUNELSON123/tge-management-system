@@ -1,0 +1,17 @@
+import type { AdminPermission, AdminRole, AdminUserDetail, AdminUsersList, AccountStatus } from "../types/admin-users.types";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+async function request<T>(url: string, token: string, options: RequestInit = {}): Promise<T> { const response = await fetch(`${API}${url}`, { ...options, headers: { Authorization: `Bearer ${token}`, ...(options.body ? { "Content-Type": "application/json" } : {}) }, cache: "no-store" }); const body = await response.json().catch(() => null) as { message?: string; data?: T } | null; if (!response.ok || body?.data === undefined) throw new Error(body?.message || "User management is unavailable."); return body.data; }
+export const adminUsersService = {
+  list(token: string, params: Record<string, string | number>, signal?: AbortSignal) { const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value !== "").map(([k, v]) => [k, String(v)])); return request<AdminUsersList>(`/api/admin/users-roles/users?${query}`, token, { signal }); },
+  get(token: string, id: string, signal?: AbortSignal) { return request<AdminUserDetail>(`/api/admin/users-roles/users/${encodeURIComponent(id)}`, token, { signal }); },
+  async photo(token: string, id: string, signal?: AbortSignal) { const response = await fetch(`${API}/api/admin/users-roles/users/${encodeURIComponent(id)}/photo`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store", signal }); if (!response.ok) throw new Error("Photo unavailable."); return response.blob(); },
+  roles(token: string, signal?: AbortSignal) { return request<AdminRole[]>(`/api/admin/users-roles/roles`, token, { signal }); },
+  permissions(token: string, signal?: AbortSignal) { return request<AdminPermission[]>(`/api/admin/users-roles/permissions`, token, { signal }); },
+  assignableRoles(token: string, signal?: AbortSignal) { return request<Array<{ id: string; name: string }>>(`/api/admin/users-roles/assignable-roles`, token, { signal }); },
+  filterRoles(token: string, signal?: AbortSignal) { return request<Array<{ id: string; name: string }>>(`/api/admin/users-roles/filter-roles`, token, { signal }); },
+  changeStatus(token: string, id: string, status: Extract<AccountStatus, "ACTIVE" | "SUSPENDED">) { return request<AdminUserDetail>(`/api/admin/users-roles/users/${encodeURIComponent(id)}/status`, token, { method: "POST", body: JSON.stringify({ status }) }); },
+  assignRole(token: string, id: string, roleId: string) { return request<AdminUserDetail>(`/api/admin/users-roles/users/${encodeURIComponent(id)}/role`, token, { method: "POST", body: JSON.stringify({ roleId }) }); },
+  create(token: string, input: { email: string; firstName: string; lastName: string; phone?: string; roleId: string }) { return request<{ userId: string; email: string; status: AccountStatus; activationExpiresAt: string | null; invitationSent: boolean }>(`/api/auth/accounts`, token, { method: "POST", body: JSON.stringify(input) }); },
+  resendInvitation(token: string, email: string) { return request<{ userId: string; email: string; expiresAt: string }>(`/api/auth/accounts/resend-invitation`, token, { method: "POST", body: JSON.stringify({ email }) }); },
+  updateRolePermissions(token: string, roleId: string, permissionIds: string[]) { return request<AdminRole>(`/api/admin/users-roles/roles/${encodeURIComponent(roleId)}/permissions`, token, { method: "PUT", body: JSON.stringify({ permissionIds }) }); },
+};

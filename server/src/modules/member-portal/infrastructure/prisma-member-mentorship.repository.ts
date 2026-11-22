@@ -1,4 +1,5 @@
 import { prisma } from "../../../infrastructure/database/prisma-client.js";
+import { progressionFor, progressionSelect } from "../../programme-progression/progression.js";
 import type { MemberMentorshipData, MemberMentorshipRepository } from "../domain/member-mentorship.repository.js";
 
 export class PrismaMemberMentorshipRepository implements MemberMentorshipRepository {
@@ -7,7 +8,7 @@ export class PrismaMemberMentorshipRepository implements MemberMentorshipReposit
   async findForUser(userId: string): Promise<MemberMentorshipData | null> {
     const member = await this.database.member.findUnique({
       where: { userId },
-      select: { mentorAssignments: {
+      select: { enrollments: { where: { status: "completed" }, select: progressionSelect }, mentorAssignments: {
         orderBy: [{ startDate: "desc" }, { id: "asc" }],
         select: {
           id: true, status: true,
@@ -28,6 +29,7 @@ export class PrismaMemberMentorshipRepository implements MemberMentorshipReposit
     }));
     const completed = member.mentorAssignments.flatMap((assignment) => assignment.sessions).filter((session) => session.status.toLowerCase() === "completed");
     return {
+      ...progressionFor(member.enrollments),
       assignments,
       completedSessions: completed.length,
       // The schema stores scheduled duration, not completed/attended duration. Do not report scheduled time as delivered mentorship hours.

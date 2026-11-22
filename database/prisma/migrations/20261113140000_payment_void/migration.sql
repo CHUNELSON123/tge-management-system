@@ -1,0 +1,2 @@
+ALTER TABLE "payment_records" ADD COLUMN "voided_at" TIMESTAMPTZ(6), ADD COLUMN "voided_by_user_id" UUID REFERENCES "users"("id") ON DELETE RESTRICT, ADD COLUMN "void_reason" VARCHAR(500);
+ALTER TABLE "payment_records" ADD CONSTRAINT "payment_records_void_integrity" CHECK (("voided_at" IS NULL AND "voided_by_user_id" IS NULL AND "void_reason" IS NULL) OR ("kind" = 'manual' AND "voided_at" IS NOT NULL AND "voided_by_user_id" IS NOT NULL AND "void_reason" IS NOT NULL));

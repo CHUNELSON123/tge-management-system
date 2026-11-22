@@ -1,0 +1,74 @@
+import { GetAdminAccessUseCase } from "./application/get-admin-access.usecase.js";
+import { ManageAdminProgressUseCase } from "./application/manage-admin-progress.usecase.js";
+import { PrismaAdminProgressRepository } from "./infrastructure/prisma-admin-progress.repository.js";
+import { createAdminProgressRouter } from "./presentation/controllers/admin-progress.controller.js";
+import { GetAdminDashboardUseCase } from "./application/get-admin-dashboard.usecase.js";
+import { GetAdminHeaderUseCase } from "./application/get-admin-header.usecase.js";
+import { GetAdminMembersUseCase } from "./application/get-admin-members.usecase.js";
+import { ManageAdminProgrammesUseCase } from "./application/manage-admin-programmes.usecase.js";
+import { RegisterAdminMemberUseCase } from "./application/register-admin-member.usecase.js";
+import { ReviewMembershipApplicationUseCase } from "./application/review-membership-application.usecase.js";
+import { PrismaAdminDashboardRepository } from "./infrastructure/prisma-admin-dashboard.repository.js";
+import { PrismaAdminHeaderRepository } from "./infrastructure/prisma-admin-header.repository.js";
+import { PrismaAdminMembersRepository } from "./infrastructure/prisma-admin-members.repository.js";
+import { PrismaAdminProgrammesRepository } from "./infrastructure/prisma-admin-programmes.repository.js";
+import { createActivationTokenUseCase, emailService } from "../auth/auth.module.js";
+import { PrismaAdminAccessRepository } from "./infrastructure/prisma-admin-access.repository.js";
+import { createAdminDashboardRouter } from "./presentation/controllers/admin-dashboard.controller.js";
+import { createAdminHeaderRouter } from "./presentation/controllers/admin-header.controller.js";
+import { createAdminMembersRouter } from "./presentation/controllers/admin-members.controller.js";
+import { createAdminProgrammesRouter } from "./presentation/controllers/admin-programmes.controller.js";
+import { createAdminPortalRouter } from "./presentation/controllers/admin-portal.controller.js";
+import { ManageAdminResourcesUseCase } from "./application/manage-admin-resources.usecase.js";
+import { PrismaAdminResourcesRepository } from "./infrastructure/prisma-admin-resources.repository.js";
+import { LocalAdminResourceFileStorage } from "./infrastructure/local-admin-resource-file.storage.js";
+import { createAdminResourcesRouter } from "./presentation/controllers/admin-resources.controller.js";
+import { ManageAdminEventsUseCase } from "./application/manage-admin-events.usecase.js";
+import { PrismaAdminEventsRepository } from "./infrastructure/prisma-admin-events.repository.js";
+import { createAdminEventsRouter } from "./presentation/controllers/admin-events.controller.js";
+import { ManageAdminMentorshipUseCase } from "./application/manage-admin-mentorship.usecase.js";
+import { PrismaAdminMentorshipRepository } from "./infrastructure/prisma-admin-mentorship.repository.js";
+import { createAdminMentorshipRouter } from "./presentation/controllers/admin-mentorship.controller.js";
+import { Router } from "express";
+import { ManageAdminBusinessesUseCase } from "./application/manage-admin-businesses.usecase.js";
+import { PrismaAdminBusinessesRepository } from "./infrastructure/prisma-admin-businesses.repository.js";
+import { createAdminBusinessesRouter } from "./presentation/controllers/admin-businesses.controller.js";
+import { ManageAdminWebsiteUseCase } from "./application/manage-admin-website.usecase.js";
+import { PrismaAdminWebsiteRepository } from "./infrastructure/prisma-admin-website.repository.js";
+import { createAdminWebsiteRouter } from "./presentation/controllers/admin-website.controller.js";
+import { ManageAdminUsersUseCase } from "./application/manage-admin-users.usecase.js";
+import { PrismaAdminUsersRepository } from "./infrastructure/prisma-admin-users.repository.js";
+import { createAdminUsersRouter } from "./presentation/controllers/admin-users.controller.js";
+import { GetAdminAuditUseCase } from "./application/get-admin-audit.usecase.js";
+import { PrismaAdminAuditRepository } from "./infrastructure/prisma-admin-audit.repository.js";
+import { createAdminAuditRouter } from "./presentation/controllers/admin-audit.controller.js";
+import { GetAdminReportsUseCase } from "./application/get-admin-reports.usecase.js";
+import { PrismaAdminReportsRepository } from "./infrastructure/prisma-admin-reports.repository.js";
+import { createAdminReportsRouter } from "./presentation/controllers/admin-reports.controller.js";
+import { GetAdminSettingsUseCase } from "./application/get-admin-settings.usecase.js";
+import { PrismaAdminSettingsRepository } from "../system-settings/infrastructure/prisma-admin-settings.repository.js";
+import { createAdminSettingsRouter } from "./presentation/controllers/admin-settings.controller.js";
+
+const router = Router();
+router.use(createAdminProgressRouter(new ManageAdminProgressUseCase(new PrismaAdminProgressRepository())));
+router.use(createAdminPortalRouter(new GetAdminAccessUseCase(new PrismaAdminAccessRepository())));
+router.use(createAdminDashboardRouter(new GetAdminDashboardUseCase(new PrismaAdminDashboardRepository())));
+router.use(createAdminHeaderRouter(new GetAdminHeaderUseCase(new PrismaAdminHeaderRepository())));
+const adminMembersRepository = new PrismaAdminMembersRepository();
+router.use(createAdminMembersRouter(
+  new GetAdminMembersUseCase(adminMembersRepository),
+  new RegisterAdminMemberUseCase(adminMembersRepository, createActivationTokenUseCase, emailService),
+  new ReviewMembershipApplicationUseCase(adminMembersRepository, createActivationTokenUseCase, emailService),
+));
+router.use(createAdminProgrammesRouter(new ManageAdminProgrammesUseCase(new PrismaAdminProgrammesRepository())));
+router.use(createAdminResourcesRouter(new ManageAdminResourcesUseCase(new PrismaAdminResourcesRepository(),new LocalAdminResourceFileStorage())));
+router.use(createAdminEventsRouter(new ManageAdminEventsUseCase(new PrismaAdminEventsRepository())));
+router.use(createAdminMentorshipRouter(new ManageAdminMentorshipUseCase(new PrismaAdminMentorshipRepository())));
+router.use(createAdminBusinessesRouter(new ManageAdminBusinessesUseCase(new PrismaAdminBusinessesRepository())));
+router.use(createAdminWebsiteRouter(new ManageAdminWebsiteUseCase(new PrismaAdminWebsiteRepository())));
+router.use(createAdminUsersRouter(new ManageAdminUsersUseCase(new PrismaAdminUsersRepository())));
+router.use(createAdminAuditRouter(new GetAdminAuditUseCase(new PrismaAdminAuditRepository())));
+router.use(createAdminReportsRouter(new GetAdminReportsUseCase(new PrismaAdminReportsRepository())));
+router.use(createAdminSettingsRouter(new GetAdminSettingsUseCase(new PrismaAdminSettingsRepository())));
+
+export const adminPortalRouter = router;

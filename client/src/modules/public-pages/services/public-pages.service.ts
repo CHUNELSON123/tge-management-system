@@ -17,19 +17,23 @@ export interface PublicProgramme {
   name: string;
   slug: string;
   description: string | null;
+  coverImageUrl?: string | null;
   startDate: string | null;
   endDate: string | null;
+  programmeType?: string | null; targetAudience?: string | null; durationWeeks?: number | null; deliveryMode?: string | null; learningObjectives?: string[]; programContent?: string[]; eligibility?: string | null;
 }
 
 export interface PublicEvent {
   id: string;
   title: string;
+  shortDescription?: string | null;
   eventType: string;
   description: string | null;
   startAt: string;
   endAt: string | null;
   timezone: string | null;
   venue: string | null;
+  registrationRequired?: boolean;
 }
 
 export interface PublicEventsList {
@@ -58,6 +62,7 @@ export interface PublicNewsArticle {
   content: string;
   publishedAt: string;
 }
+export interface PublicPageContent { id: string; slug: string; title: string; content: string; publishedAt: string }
 
 export class PublicNewsNotFoundError extends Error {
   constructor() { super("Article not found."); this.name = "PublicNewsNotFoundError"; }
@@ -90,7 +95,7 @@ interface EventDetailsResponse {
   data: PublicEventDetails;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export const publicPagesService = {
   async getHomePreviews(signal?: AbortSignal): Promise<HomePreviews> {
@@ -215,6 +220,16 @@ export const publicPagesService = {
     return body.data.filter((item): item is PublicNewsArticle => !!item && typeof item === "object" &&
       typeof item.id === "string" && typeof item.slug === "string" && typeof item.title === "string" &&
       (typeof item.summary === "string" || item.summary === null) && typeof item.content === "string" && typeof item.publishedAt === "string");
+  },
+
+  async getPage(slug: string, signal?: AbortSignal): Promise<PublicPageContent> {
+    const response = await fetch(`${API_URL}/api/public/pages/${encodeURIComponent(slug)}`, { method: "GET", cache: "no-store", signal });
+    const body = await response.json().catch(() => null) as { message?: string; data?: unknown } | null;
+    if (response.status === 404) throw new Error("Page not found.");
+    if (!response.ok || !body?.data || typeof body.data !== "object") throw new Error(body?.message || "Page content is temporarily unavailable.");
+    const page = body.data as Partial<PublicPageContent>;
+    if (typeof page.id !== "string" || typeof page.slug !== "string" || typeof page.title !== "string" || typeof page.content !== "string" || typeof page.publishedAt !== "string") throw new Error("Page response is invalid.");
+    return page as PublicPageContent;
   },
 
   async getNewsArticle(slug: string, signal?: AbortSignal): Promise<PublicNewsArticle> {

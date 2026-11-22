@@ -2,8 +2,9 @@
 
 import { useLanguage } from "./language-provider";
 
-export function LanguageSwitcher({ className = "" }: { className?: string }) {
+export function LanguageSwitcher({ className = "", compact = false }: { className?: string; compact?: boolean }) {
   const { locale, setLocale, t } = useLanguage();
+  if (compact) return <button type="button" onClick={() => setLocale(locale === "en" ? "fr" : "en")} aria-label={t(locale === "en" ? "chooseFrench" : "chooseEnglish")} className={`min-h-10 min-w-10 rounded-md text-xs font-bold text-[#075C32] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A] ${className}`}>{locale === "en" ? "FR" : "EN"}</button>;
   return (
     <div className={`inline-flex items-center gap-1 rounded-md border border-current/20 p-1 text-xs ${className}`} role="group" aria-label={t("language")}>
       <button type="button" onClick={() => setLocale("en")} aria-label={t("chooseEnglish")} aria-pressed={locale === "en"} className={`rounded px-2 py-1 font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A] focus-visible:ring-offset-2 ${locale === "en" ? "bg-[#0D6339] text-white" : "hover:bg-black/5"}`}>EN</button>

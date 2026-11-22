@@ -168,7 +168,7 @@ export function useMemberSettings() {
   async function uploadPhoto(file: File) {
     const token = accessToken();
     if (!token) { router.replace("/login"); return; }
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size === 0 || file.size > 3 * 1024 * 1024) {
+    if (!["image/jpeg", "image/png"].includes(file.type) || file.size === 0 || file.size > 2 * 1024 * 1024) {
       setPhotoFeedback({ type: "error", message: t("profilePhotoInvalid") });
       return;
     }

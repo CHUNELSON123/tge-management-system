@@ -1,0 +1,4 @@
+ALTER TABLE "events"
+  ADD COLUMN IF NOT EXISTS "short_description" VARCHAR(500),
+  ADD COLUMN IF NOT EXISTS "event_mode" VARCHAR(20),
+  ADD COLUMN IF NOT EXISTS "registration_required" BOOLEAN NOT NULL DEFAULT TRUE;

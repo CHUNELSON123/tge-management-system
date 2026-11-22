@@ -1,0 +1,25 @@
+import { Router } from "express";
+import { z } from "zod";
+import { authenticate, type AuthenticatedRequest } from "../../../common/middleware/authenticate.middleware.js";
+import { requirePermission } from "../../../common/middleware/require-role.middleware.js";
+import type { DeliveryActor } from "../domain/mentorship-delivery.repository.js";
+import type { ManageMentorshipDelivery } from "../application/manage-mentorship-delivery.usecase.js";
+const uuid = z.string().uuid();
+const report = z.object({ year: z.number().int().min(2000).max(2100), quarter: z.number().int().min(1).max(4), summary: z.string().trim().min(1).max(10000), achievements: z.string().trim().max(10000), challenges: z.string().trim().max(10000), nextSteps: z.string().trim().max(10000), reportId: uuid.optional() }).strict();
+const session = z.object({ status: z.enum(["completed", "cancelled"]), outcome: z.string().trim().max(10000).nullable() }).strict();
+const objective = z.object({ status: z.enum(["not_started", "in_progress", "completed"]) }).strict();
+export function createMentorshipDeliveryRouter(useCase: ManageMentorshipDelivery, role: DeliveryActor["role"]) {
+  const router = Router(); router.use(authenticate);
+  if (role === "admin") router.use(requirePermission("mentorship.manage"), (req: AuthenticatedRequest, res, next) => { if (!["System Administrator", "Organisation Administrator"].includes(req.authenticatedUser?.roleName || "")) { res.status(403).json({ message: "Administrator access required." }); return; } next(); });
+  else router.use((req: AuthenticatedRequest, res, next) => { if (req.authenticatedUser?.roleName !== (role === "member" ? "Member" : "Mentor")) { res.status(403).json({ message: "Access denied." }); return; } next(); });
+  const actor = (req: AuthenticatedRequest): DeliveryActor => ({ userId: req.authenticatedUser!.userId, role });
+  const sendError = (error: unknown, res: import("express").Response, next: import("express").NextFunction) => { if (error instanceof Error && ["ASSIGNMENT_CLOSED", "SESSION_ALREADY_FINISHED", "REPORT_EXISTS", "REPORT_CHANGED"].includes(error.message)) { const message = error.message === "ASSIGNMENT_CLOSED" ? "This mentorship assignment is no longer active." : error.message === "SESSION_ALREADY_FINISHED" ? "This session has already been completed or cancelled." : error.message === "REPORT_EXISTS" ? "A report for that quarter already exists. Use Edit report to update it." : "The report or its quarter changed. Refresh and try again."; res.status(409).json({ message }); return; } next(error); };
+  router.get("/assignments/:id", async (req: AuthenticatedRequest, res, next) => { const id = uuid.safeParse(req.params.id); if (!id.success) { res.status(404).json({ message: "Assignment not found." }); return; } try { const data = await useCase.detail(id.data, actor(req)); if (!data) { res.status(404).json({ message: "Assignment not found." }); return; } res.json({ data }); } catch (error) { sendError(error, res, next); } });
+  if (role !== "member") {
+    router.put("/assignments/:id/report", async (req: AuthenticatedRequest, res, next) => { const id = uuid.safeParse(req.params.id), input = report.safeParse(req.body); if (!id.success || !input.success) { res.status(400).json({ message: "Enter a valid quarter, year and report summary." }); return; } try { const data = await useCase.report(id.data, actor(req), input.data); if (!data) { res.status(404).json({ message: "Assignment not found." }); return; } res.json({ data }); } catch (error) { sendError(error, res, next); } });
+    router.patch("/sessions/:id", async (req: AuthenticatedRequest, res, next) => { const id = uuid.safeParse(req.params.id), input = session.safeParse(req.body); if (!id.success || !input.success) { res.status(400).json({ message: "Session details are invalid." }); return; } try { const data = await useCase.updateSession(id.data, actor(req), input.data.status, input.data.outcome); if (!data) { res.status(404).json({ message: "Session not found." }); return; } res.json({ data }); } catch (error) { sendError(error, res, next); } });
+    router.patch("/objectives/:id", async (req: AuthenticatedRequest, res, next) => { const id = uuid.safeParse(req.params.id), input = objective.safeParse(req.body); if (!id.success || !input.success) { res.status(400).json({ message: "Objective status is invalid." }); return; } try { const data = await useCase.updateObjective(id.data, actor(req), input.data.status); if (!data) { res.status(404).json({ message: "Objective not found." }); return; } res.json({ data }); } catch (error) { sendError(error, res, next); } });
+  }
+  if (role === "admin") router.post("/assignments/:id/complete", async (req: AuthenticatedRequest, res, next) => { const id = uuid.safeParse(req.params.id); if (!id.success) { res.status(404).json({ message: "Assignment not found." }); return; } try { const data = await useCase.complete(id.data, actor(req)); if (!data) { res.status(404).json({ message: "Assignment not found." }); return; } res.json({ data }); } catch (error) { sendError(error, res, next); } });
+  return router;
+}

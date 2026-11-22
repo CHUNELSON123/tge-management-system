@@ -3,17 +3,19 @@
 import Link from "next/link";
 import { ArrowRight, Eye, HandHeart, Lightbulb, Target, UsersRound } from "lucide-react";
 import { useLanguage } from "@/modules/i18n/language-provider";
+import { useWebsiteSettings } from "../hooks/use-website-settings";
 
 const values = [
-  { title: "aboutInclusion", copy: "aboutInclusionCopy", icon: UsersRound },
-  { title: "aboutCollaboration", copy: "aboutCollaborationCopy", icon: HandHeart },
-  { title: "aboutInnovation", copy: "aboutInnovationCopy", icon: Lightbulb },
-  { title: "aboutIntegrity", copy: "aboutIntegrityCopy", icon: Target },
-  { title: "aboutImpact", copy: "aboutImpactCopy", icon: Eye },
+  { title: "aboutInclusion", copy: "aboutInclusionCopy", titleKey: "aboutInclusionTitle", textKey: "aboutInclusionText", icon: UsersRound },
+  { title: "aboutCollaboration", copy: "aboutCollaborationCopy", titleKey: "aboutCollaborationTitle", textKey: "aboutCollaborationText", icon: HandHeart },
+  { title: "aboutInnovation", copy: "aboutInnovationCopy", titleKey: "aboutInnovationTitle", textKey: "aboutInnovationText", icon: Lightbulb },
+  { title: "aboutIntegrity", copy: "aboutIntegrityCopy", titleKey: "aboutIntegrityTitle", textKey: "aboutIntegrityText", icon: Target },
+  { title: "aboutImpact", copy: "aboutImpactCopy", titleKey: "aboutImpactTitle", textKey: "aboutImpactText", icon: Eye },
 ] as const;
 
 export default function AboutPage() {
   const { t } = useLanguage();
+  const settings = useWebsiteSettings();
 
   return (
     <main className="bg-white text-[#151A18]">
@@ -22,8 +24,8 @@ export default function AboutPage() {
         <div className="mx-auto flex min-h-[340px] max-w-[1440px] items-center px-6 py-12 sm:min-h-[390px] sm:px-10 lg:px-14">
           <div className="max-w-[540px]">
             <p className="text-xs font-bold uppercase tracking-widest text-[#39C477]">{t("aboutUs")}</p>
-            <h1 className="mt-3 text-3xl font-bold leading-tight sm:text-[40px]">{t("aboutHeadlineFirst")}<br />{t("aboutHeadlineSecond")}</h1>
-            <p className="mt-4 max-w-[500px] text-sm leading-6 text-white/90 sm:text-[15px] sm:leading-6">{t("aboutHeroCopy")}</p>
+            <h1 className="mt-3 whitespace-pre-line text-3xl font-bold leading-tight sm:text-[40px]">{settings?.aboutHeroTitle || <>{t("aboutHeadlineFirst")}<br />{t("aboutHeadlineSecond")}</>}</h1>
+            <p className="mt-4 max-w-[500px] whitespace-pre-line text-sm leading-6 text-white/90 sm:text-[15px] sm:leading-6">{settings?.aboutHeroIntro || t("aboutHeroCopy")}</p>
           </div>
         </div>
       </section>
@@ -37,9 +39,8 @@ export default function AboutPage() {
 
         <article>
           <p className="text-xs font-bold uppercase tracking-wide text-[#087B49]">{t("aboutOurStory")}</p>
-          <h2 className="mt-1 text-2xl font-bold leading-tight">{t("aboutStoryTitle")}</h2>
-          <p className="mt-3 text-sm leading-6 text-[#4D5651]">{t("aboutStoryCopyOne")}</p>
-          <p className="mt-3 text-sm leading-6 text-[#4D5651]">{t("aboutStoryCopyTwo")}</p>
+          <h2 className="mt-1 text-2xl font-bold leading-tight">{settings?.aboutTitle || t("aboutStoryTitle")}</h2>
+          {settings?.aboutContent ? <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#4D5651]">{settings.aboutContent}</p> : <><p className="mt-3 text-sm leading-6 text-[#4D5651]">{t("aboutStoryCopyOne")}</p><p className="mt-3 text-sm leading-6 text-[#4D5651]">{t("aboutStoryCopyTwo")}</p></>}
           <Link href="/programmes" className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-md border border-[#0A8148] px-3 text-sm font-semibold text-[#087B49] hover:bg-[#F2F8F4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#147E4A] focus-visible:ring-offset-2">
             {t("aboutExploreWork")} <ArrowRight aria-hidden="true" size={15} />
           </Link>
@@ -48,15 +49,15 @@ export default function AboutPage() {
         <aside className="space-y-4 rounded-xl bg-[#F3F7F5] p-4 sm:p-5">
           <section className="flex gap-3">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-[#087B49] shadow-sm"><Target aria-hidden="true" size={25} /></span>
-            <div><h2 className="text-xs font-bold uppercase tracking-wide text-[#087B49]">{t("aboutMission")}</h2><p className="mt-1 text-sm leading-5 text-[#38423D]">{t("aboutMissionCopy")}</p></div>
+            <div><h2 className="text-xs font-bold uppercase tracking-wide text-[#087B49]">{t("aboutMission")}</h2><p className="mt-1 whitespace-pre-line text-sm leading-5 text-[#38423D]">{settings?.aboutMission || t("aboutMissionCopy")}</p></div>
           </section>
           <section className="flex gap-3">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-[#087B49] shadow-sm"><Eye aria-hidden="true" size={25} /></span>
-            <div><h2 className="text-xs font-bold uppercase tracking-wide text-[#087B49]">{t("aboutVision")}</h2><p className="mt-1 text-sm leading-5 text-[#38423D]">{t("aboutVisionCopy")}</p></div>
+            <div><h2 className="text-xs font-bold uppercase tracking-wide text-[#087B49]">{t("aboutVision")}</h2><p className="mt-1 whitespace-pre-line text-sm leading-5 text-[#38423D]">{settings?.aboutVision || t("aboutVisionCopy")}</p></div>
           </section>
           <section className="flex gap-3">
             <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-[#087B49] shadow-sm"><HandHeart aria-hidden="true" size={25} /></span>
-            <div><h2 className="text-xs font-bold uppercase tracking-wide text-[#087B49]">{t("aboutValues")}</h2><p className="mt-1 text-sm leading-5 text-[#38423D]">{t("aboutValuesSummary")}</p></div>
+            <div><h2 className="text-xs font-bold uppercase tracking-wide text-[#087B49]">{t("aboutValues")}</h2><p className="mt-1 whitespace-pre-line text-sm leading-5 text-[#38423D]">{settings?.aboutValuesSummary || t("aboutValuesSummary")}</p></div>
           </section>
         </aside>
       </section>
@@ -65,18 +66,18 @@ export default function AboutPage() {
         <div className="mx-auto max-w-[1440px] px-5 py-7 sm:px-8 lg:px-10 lg:py-8">
           <h2 className="text-xs font-bold uppercase tracking-wide text-[#087B49]">{t("aboutValues")}</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {values.map(({ title, copy, icon: Icon }) => (
+            {values.map(({ title, copy, titleKey, textKey, icon: Icon }) => (
               <article key={title} className="rounded-lg border border-[#E5ECE8] bg-white p-4">
                 <Icon aria-hidden="true" className="h-7 w-7 text-[#078348]" strokeWidth={1.6} />
-                <h3 className="mt-2 text-sm font-bold text-[#17432D]">{t(title)}</h3>
-                <p className="mt-1 text-xs leading-5 text-[#59635E]">{t(copy)}</p>
+                <h3 className="mt-2 text-sm font-bold text-[#17432D]">{settings?.[titleKey] || t(title)}</h3>
+                <p className="mt-1 whitespace-pre-line text-xs leading-5 text-[#59635E]">{settings?.[textKey] || t(copy)}</p>
               </article>
             ))}
           </div>
           <div className="mt-6 border-t border-[#DDE5E0] pt-5">
             <h2 className="text-xs font-bold uppercase tracking-wide text-[#087B49]">{t("aboutImpact")}</h2>
-            <p className="mt-2 max-w-4xl text-sm leading-6 text-[#46514B]">{t("aboutImpactStatement")}</p>
-            <p className="mt-2 text-xs text-[#66716B]">{t("aboutImpactNote")}</p>
+            <p className="mt-2 max-w-4xl whitespace-pre-line text-sm leading-6 text-[#46514B]">{settings?.aboutImpactStatement || t("aboutImpactStatement")}</p>
+            <p className="mt-2 text-xs text-[#66716B]">{settings?.aboutImpactNote || t("aboutImpactNote")}</p>
           </div>
         </div>
       </section>
@@ -84,7 +85,7 @@ export default function AboutPage() {
       <section className="bg-[#006B3B] text-white">
         <div className="mx-auto flex max-w-[1440px] flex-col items-center gap-4 px-5 py-6 text-center sm:px-8 md:flex-row md:justify-center md:text-left lg:px-10">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/75"><UsersRound aria-hidden="true" size={30} /></div>
-          <div className="max-w-xl"><h2 className="text-xl font-bold">{t("homeCommunityTitle")}</h2><p className="mt-1 text-sm leading-5 text-white/90">{t("homeCommunityCopy")}</p></div>
+          <div className="max-w-xl"><h2 className="text-xl font-bold">{settings?.aboutCommunityTitle || t("homeCommunityTitle")}</h2><p className="mt-1 text-sm leading-5 text-white/90">{settings?.aboutCommunityText || t("homeCommunityCopy")}</p></div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link href="/membership-application" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-semibold text-[#006B3B] hover:bg-[#EFF8F2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#006B3B]">{t("becomeMember")}</Link>
             <Link href="/contact" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-white px-4 text-sm font-semibold text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#006B3B]">{t("contactUs")}</Link>

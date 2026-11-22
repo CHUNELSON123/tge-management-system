@@ -3,5 +3,7 @@ export class GetMemberMessagesUseCase {
   constructor(private readonly repository: MemberMessagesRepository) {}
   list(userId: string): Promise<MemberConversationSummary[]> { return this.repository.listConversations(userId); }
   read(userId: string, conversationId: string, now = new Date()): Promise<MemberConversationDetail | null> { return this.repository.readConversation(userId, conversationId, now); }
+  markRead(userId: string, conversationId: string, messageId: string): Promise<boolean> { return this.repository.markReadThrough(userId, conversationId, messageId); }
+  callPeer(userId: string, conversationId: string): Promise<string | null> { return this.repository.findCallPeer(userId, conversationId); }
   send(userId: string, conversationId: string, body: string, now = new Date()): Promise<MemberConversationMessage | null> { return this.repository.sendMessage(userId, conversationId, body, now); }
 }

@@ -5,10 +5,15 @@
     "main": "dist/main.js",
     "scripts": {
         "test": "node scripts/run-tests.mjs",
+        "predev": "npm --prefix ../database run db:generate",
         "dev": "tsx watch src/main.ts",
+        "prebuild": "npm --prefix ../database run db:generate",
         "build": "tsc",
         "start": "node dist/main.js",
-        "typecheck": "tsc --noEmit"
+        "test:admin-controls": "tsx --test src/modules/admin-portal/domain/account-lifecycle.test.ts src/modules/admin-portal/domain/website-content-lifecycle.test.ts src/modules/admin-portal/presentation/dto/admin-website.dto.test.ts src/modules/admin-portal/presentation/dto/admin-report-range.dto.test.ts src/modules/admin-portal/infrastructure/prisma-admin-audit.repository.test.ts",
+        "typecheck": "tsc --noEmit",
+        "test:foundation-registration": "tsx --test src/modules/programme-registration/programme-registration.e2e.test.ts",
+        "test:mentorship-delivery": "tsx --test src/modules/mentorship-delivery/mentorship-delivery.e2e.test.ts src/modules/programme-progression/progression.test.ts"
     },
     "keywords": [],
     "type": "module",

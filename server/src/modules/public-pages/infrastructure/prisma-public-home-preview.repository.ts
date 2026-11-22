@@ -25,14 +25,16 @@ export class PrismaPublicHomePreviewRepository implements PublicHomePreviewRepos
     const records = await this.database.programme.findMany({
       where: { status: PUBLISHED_CONTENT_STATUS },
       orderBy: { name: "asc" },
-      select: { name: true, slug: true, description: true, startDate: true, endDate: true },
+      select: { name: true, slug: true, description: true, coverImageUrl: true, startDate: true, endDate: true, programmeType: true, targetAudience: true, durationWeeks: true, deliveryMode: true, learningObjectives: true, programContent: true, eligibility: true },
     });
     return records.map((record) => ({
       name: record.name,
       slug: record.slug,
       description: record.description,
+      coverImageUrl: record.coverImageUrl ?? null,
       startDate: record.startDate?.toISOString() ?? null,
       endDate: record.endDate?.toISOString() ?? null,
+      programmeType: record.programmeType ?? null, targetAudience: record.targetAudience ?? null, durationWeeks: record.durationWeeks ?? null, deliveryMode: record.deliveryMode ?? null, learningObjectives: record.learningObjectives ?? [], programContent: record.programContent ?? [], eligibility: record.eligibility ?? null,
     }));
   }
 

@@ -34,7 +34,7 @@ export class PublicBusinessNotFoundError extends Error {
   constructor() { super("Business not found."); this.name = "PublicBusinessNotFoundError"; }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object";
 const isNullableText = (value: unknown) => value === null || typeof value === "string";
 const isCategory = (value: unknown): value is PublicBusinessCategory => isRecord(value) && typeof value.id === "string" && typeof value.name === "string";

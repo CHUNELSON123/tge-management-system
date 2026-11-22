@@ -1,0 +1,66 @@
+model FeeDefinition {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String   @db.VarChar(200)
+  category      String   @db.VarChar(30)
+  audience      String   @db.VarChar(20)
+  amountMinor   Int      @map("amount_minor")
+  currency      String   @db.Char(3)
+  programmeId   String?  @map("programme_id") @db.Uuid
+  eventId       String?  @map("event_id") @db.Uuid
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  programme     Programme? @relation(fields: [programmeId], references: [id], onDelete: Restrict)
+  event         Event? @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  charges       MemberCharge[]
+  cohortRegistrationFees CohortRegistrationFee[]
+  @@index([category, active])
+  @@map("fee_definitions")
+}
+
+model MemberCharge {
+  id              String   @id @default(uuid()) @db.Uuid
+  feeId           String   @map("fee_id") @db.Uuid
+  memberId        String?  @map("member_id") @db.Uuid
+  guestName       String?  @map("guest_name") @db.VarChar(200)
+  guestEmail      String?  @map("guest_email") @db.VarChar(255)
+  periodKey       String   @map("period_key") @db.VarChar(100)
+  feeName         String   @map("fee_name") @db.VarChar(200)
+  amountMinor     Int      @map("amount_minor")
+  currency        String   @db.Char(3)
+  dueDate         DateTime? @map("due_date") @db.Date
+  createdByUserId String   @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  fee             FeeDefinition @relation(fields: [feeId], references: [id], onDelete: Restrict)
+  member          Member? @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  createdBy       User @relation("ChargeCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  payments        PaymentRecord[]
+  registrationRequest ProgrammeRegistrationRequest?
+  @@unique([feeId, memberId, periodKey])
+  @@unique([feeId, guestEmail, periodKey])
+  @@index([memberId, createdAt])
+  @@map("member_charges")
+}
+
+model PaymentRecord {
+  id               String   @id @default(uuid()) @db.Uuid
+  chargeId         String   @map("charge_id") @db.Uuid
+  kind             String   @db.VarChar(20)
+  status           String   @db.VarChar(20)
+  amountMinor      Int      @map("amount_minor")
+  currency         String   @db.Char(3)
+  method           String   @db.VarChar(30)
+  reference        String   @db.VarChar(120)
+  paidAt           DateTime @map("paid_at") @db.Timestamptz(6)
+  recordedByUserId String?  @map("recorded_by_user_id") @db.Uuid
+  requestKey       String?  @unique @map("request_key") @db.Uuid
+  voidedAt         DateTime? @map("voided_at") @db.Timestamptz(6)
+  voidedByUserId   String?  @map("voided_by_user_id") @db.Uuid
+  voidReason       String?  @map("void_reason") @db.VarChar(500)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  charge           MemberCharge @relation(fields: [chargeId], references: [id], onDelete: Restrict)
+  recordedBy       User? @relation("PaymentRecorder", fields: [recordedByUserId], references: [id], onDelete: Restrict)
+  voidedBy         User? @relation("PaymentVoider", fields: [voidedByUserId], references: [id], onDelete: Restrict)
+  @@index([chargeId, createdAt])
+  @@map("payment_records")
+}

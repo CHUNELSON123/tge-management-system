@@ -18,6 +18,7 @@ model Resource {
   description      String?   @db.Text
   resourceType     String    @map("resource_type") @db.VarChar(100)
   accessLevel      String    @map("access_level") @db.VarChar(50)
+  tags             String[]  @default([])
   status           String    @default("draft") @db.VarChar(50)
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)

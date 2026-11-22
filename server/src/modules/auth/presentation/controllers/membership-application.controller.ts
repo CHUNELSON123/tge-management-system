@@ -21,6 +21,10 @@ export function createMembershipApplicationRouter(
         data: { received: true },
       });
     } catch (error) {
+      if (error instanceof Error && error.message === "PUBLIC_REGISTRATION_DISABLED") {
+        res.status(403).json({ message: "Membership applications are currently closed." });
+        return;
+      }
       if (error instanceof ZodError) {
         res.status(400).json({
           message: "Invalid membership application data.",

@@ -10,6 +10,12 @@ import { PrismaPublicNewsRepository } from "./infrastructure/prisma-public-news.
 import { PrismaPublicBusinessesRepository } from "./infrastructure/prisma-public-businesses.repository.js";
 import { GetPublicBusinessesUseCase, GetPublicBusinessCategoriesUseCase, GetPublicBusinessDetailsUseCase } from "./application/get-public-businesses.usecase.js";
 import { createPublicBusinessesRouter } from "./presentation/public-businesses.controller.js";
+import { GetPublicPageUseCase } from "./application/get-public-page.usecase.js";
+import { PrismaPublicPagesRepository } from "./infrastructure/prisma-public-pages.repository.js";
+import { PrismaAdminSettingsRepository } from "../system-settings/infrastructure/prisma-admin-settings.repository.js";
+import { GetPublicWebsiteEntriesUseCase } from "./application/get-public-website-entries.usecase.js";
+import { PrismaPublicWebsiteEntriesRepository } from "./infrastructure/prisma-public-website-entries.repository.js";
+import { createPublicWebsiteEntriesRouter } from "./presentation/public-website-entries.controller.js";
 
 const repository = new PrismaPublicHomePreviewRepository();
 const getHomePreviews = new GetHomePreviewsUseCase(repository);
@@ -21,7 +27,9 @@ const newsRepository = new PrismaPublicNewsRepository();
 const getPublicNews = new GetPublicNewsUseCase(newsRepository);
 const getPublicNewsDetails = new GetPublicNewsDetailsUseCase(newsRepository);
 
-export const publicPagesRouter = createPublicPagesRouter(getHomePreviews, getPublicProgrammes, getPublicEvents, getPublicEventDetails, getPublicNews, getPublicNewsDetails);
+const organisationSettings = new PrismaAdminSettingsRepository();
+export const publicPagesRouter = createPublicPagesRouter(getHomePreviews, getPublicProgrammes, getPublicEvents, getPublicEventDetails, getPublicNews, getPublicNewsDetails, new GetPublicPageUseCase(new PrismaPublicPagesRepository()), () => organisationSettings.get());
+export const publicWebsiteEntriesRouter = createPublicWebsiteEntriesRouter(new GetPublicWebsiteEntriesUseCase(new PrismaPublicWebsiteEntriesRepository()));
 
 const businessesRepository = new PrismaPublicBusinessesRepository();
 export const publicBusinessesRouter = createPublicBusinessesRouter(

@@ -13,6 +13,6 @@ export class GetPublicEventDetailsUseCase {
     if (!event) return null;
 
     const relatedEvents = await this.repository.listRelatedPublishedEvents(event.id, event.eventType, now, 3);
-    return { ...event, isUpcoming: Date.parse(event.startAt) >= now.getTime(), relatedEvents };
+    return { ...event, isUpcoming: Date.parse(event.endAt ?? event.startAt) >= now.getTime(), relatedEvents };
   }
 }

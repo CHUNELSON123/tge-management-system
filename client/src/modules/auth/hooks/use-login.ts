@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useState } from "react";
-import { authService } from "../services/auth.service";
+import { authService, AuthRequestError } from "../services/auth.service";
 
 export function useLogin() {
   const [loading, setLoading] = useState(false);
@@ -29,10 +29,14 @@ export function useLogin() {
 
     authService.getSession(accessToken)
       .then(() => { if (!cancelled) setLoginSuccessful(true); })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (cancelled) return;
-        localStorage.removeItem("tge.accessToken");
-        sessionStorage.removeItem("tge.accessToken");
+        if (error instanceof AuthRequestError && error.status === 401) {
+          localStorage.removeItem("tge.accessToken");
+          sessionStorage.removeItem("tge.accessToken");
+        } else {
+          setError(error instanceof Error ? error.message : "Unable to verify your session.");
+        }
         if (!cancelled) setLoginSuccessful(false);
       })
       .finally(() => { if (!cancelled) setRestoringSession(false); });
