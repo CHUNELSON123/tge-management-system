@@ -8,6 +8,8 @@ import {
   type AuthenticatedRequest,
 } from "../../../../common/middleware/authenticate.middleware.js";
 import { requirePermission } from "../../../../common/middleware/require-role.middleware.js";
+import { prisma } from "../../../../infrastructure/database/prisma-client.js";
+import type { CreateAccountActivationTokenUseCase } from "../../application/use-cases/create-account-activation-token.usecase.js";
 
 const resendInvitationSchema = z.object({
   email: z.string().trim().email().max(254),
@@ -16,8 +18,33 @@ const resendInvitationSchema = z.object({
 export function createAccountRouter(
   createAccount: CreateAccountUseCase,
   resendInvitation: ResendAccountInvitationUseCase,
+  createActivationToken: CreateAccountActivationTokenUseCase,
 ): Router {
   const router = Router();
+
+  router.post("/manual-activation-link", authenticate, requirePermission("users.manage"), async (req: AuthenticatedRequest, res, next) => {
+    try {
+      const { email } = resendInvitationSchema.parse(req.body);
+      const actor = req.authenticatedUser;
+      if (!actor || !["System Administrator", "Organisation Administrator"].includes(actor.roleName)) {
+        res.status(403).json({ message: "You are not authorized to create activation links." }); return;
+      }
+      const user = await prisma.user.findFirst({ where: { email: email.toLowerCase(), deletedAt: null }, select: { id: true, status: true, role: { select: { name: true } } } });
+      if (!user || !["Member", "Mentor"].includes(user.role.name)) { res.status(404).json({ message: "Member or mentor account not found." }); return; }
+      if (user.status !== "PENDING_ACTIVATION") { res.status(409).json({ message: "This account is not awaiting activation." }); return; }
+      const base = process.env.ACTIVATION_URL;
+      if (!base) throw new Error("ACTIVATION_URL is not configured.");
+      const url = new URL(base);
+      const activation = await createActivationToken.execute(user.id, false);
+      url.searchParams.set("token", activation.token);
+      await prisma.auditLog.create({ data: { actorUserId: actor.userId, action: "MANUAL_ACTIVATION_LINK_CREATED", entityType: "User", entityId: user.id } });
+      res.setHeader("Cache-Control", "no-store");
+      res.status(200).json({ message: "Activation link created.", data: { activationUrl: url.toString(), expiresAt: activation.expiresAt } });
+    } catch (error) {
+      if (error instanceof ZodError) { res.status(400).json({ message: "Invalid email address." }); return; }
+      next(error);
+    }
+  });
 
   router.post("/", authenticate, requirePermission("users.manage"), async (req: AuthenticatedRequest, res, next) => {
     try {

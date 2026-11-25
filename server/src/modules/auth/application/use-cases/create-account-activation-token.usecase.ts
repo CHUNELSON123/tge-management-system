@@ -6,7 +6,7 @@ export class CreateAccountActivationTokenUseCase {
     private readonly repository: AccountActivationTokenRepository,
   ) {}
 
-  async execute(userId: string): Promise<{ token: string; expiresAt: Date }> {
+  async execute(userId: string, verifiesEmail = true): Promise<{ token: string; expiresAt: Date }> {
     const token = randomBytes(32).toString("hex");
     const tokenHash = createHash("sha256").update(token).digest("hex");
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -16,6 +16,7 @@ export class CreateAccountActivationTokenUseCase {
     await this.repository.create({
       userId,
       tokenHash,
+      verifiesEmail,
       expiresAt,
     });
 

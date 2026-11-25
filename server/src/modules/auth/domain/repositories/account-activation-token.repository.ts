@@ -6,6 +6,7 @@ export interface AccountActivationTokenRepository {
   create(data: {
     userId: string;
     tokenHash: string;
+    verifiesEmail?: boolean;
     expiresAt: Date;
   }): Promise<AccountActivationToken>;
 
