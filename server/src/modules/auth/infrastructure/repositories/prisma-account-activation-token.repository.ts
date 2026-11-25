@@ -15,6 +15,7 @@ export class PrismaAccountActivationTokenRepository
   async create(data: {
     userId: string;
     tokenHash: string;
+    verifiesEmail?: boolean;
     expiresAt: Date;
   }): Promise<AccountActivationToken> {
     return prisma.accountActivationToken.create({ data });
@@ -39,6 +40,7 @@ export class PrismaAccountActivationTokenRepository
     passwordHash: string,
   ): Promise<void> {
     await prisma.$transaction(async (transaction) => {
+      const token = await transaction.accountActivationToken.findUnique({ where: { id: tokenId }, select: { verifiesEmail: true } });
       const result = await transaction.accountActivationToken.updateMany({
         where: {
           id: tokenId,
@@ -59,7 +61,7 @@ export class PrismaAccountActivationTokenRepository
         data: {
           passwordHash,
           status: "ACTIVE",
-          emailVerifiedAt: new Date(),
+          ...(token?.verifiesEmail ? { emailVerifiedAt: new Date() } : {}),
         },
       });
       if (updated.count !== 1) throw new Error("ACTIVATION_TOKEN_INVALID");
