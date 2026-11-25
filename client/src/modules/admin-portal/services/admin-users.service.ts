@@ -13,5 +13,6 @@ export const adminUsersService = {
   assignRole(token: string, id: string, roleId: string) { return request<AdminUserDetail>(`/api/admin/users-roles/users/${encodeURIComponent(id)}/role`, token, { method: "POST", body: JSON.stringify({ roleId }) }); },
   create(token: string, input: { email: string; firstName: string; lastName: string; phone?: string; roleId: string }) { return request<{ userId: string; email: string; status: AccountStatus; activationExpiresAt: string | null; invitationSent: boolean }>(`/api/auth/accounts`, token, { method: "POST", body: JSON.stringify(input) }); },
   resendInvitation(token: string, email: string) { return request<{ userId: string; email: string; expiresAt: string }>(`/api/auth/accounts/resend-invitation`, token, { method: "POST", body: JSON.stringify({ email }) }); },
+  manualActivationLink(token: string, email: string) { return request<{ activationUrl: string; expiresAt: string }>(`/api/auth/accounts/manual-activation-link`, token, { method: "POST", body: JSON.stringify({ email }) }); },
   updateRolePermissions(token: string, roleId: string, permissionIds: string[]) { return request<AdminRole>(`/api/admin/users-roles/roles/${encodeURIComponent(roleId)}/permissions`, token, { method: "PUT", body: JSON.stringify({ permissionIds }) }); },
 };

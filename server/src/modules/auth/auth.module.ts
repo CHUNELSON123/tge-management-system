@@ -31,5 +31,5 @@ const loginUseCase = new LoginUseCase(userRepository, jwtService);
 
 export const authModule = createMembershipApplicationRouter(createMembershipApplicationUseCase, activateAccountUseCase);
 export const authRouter = createAuthRouter(loginUseCase, emailService);
-export const accountRouter = createAccountRouter(createAccountUseCase, resendAccountInvitationUseCase);
+export const accountRouter = createAccountRouter(createAccountUseCase, resendAccountInvitationUseCase, createActivationTokenUseCase);
 export const firstAdminRouter = createFirstAdminRouter();
